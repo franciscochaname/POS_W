@@ -1,5 +1,6 @@
 @page "/configuracion"
-@inject ModuleDashboardService Modules
+@inject ConfigurationService Configuration
+@inject ISnackbar Snackbar
 
 <PageTitle>Configuracion - POS</PageTitle>
 
@@ -9,83 +10,257 @@
         <h1>Configuracion</h1>
         <p>Empresa, establecimientos, series, impuestos y reglas comerciales por local.</p>
     </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddBusiness">
-        Registrar empresa
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadAsync">
+        Actualizar
     </MudButton>
 </section>
 
-@if (_summary is null)
+@if (_workspace is null)
 {
     <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
 }
 else
 {
-    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
+    <DatabaseNotice IsConfigured="_workspace.DatabaseConfigured" Message="@_workspace.StatusMessage" />
 
     <MudGrid Spacing="3">
         <MudItem xs="12" sm="4">
-            <MudPaper Class="metric-card" Elevation="0">
+            <MudPaper Class="metric-card compact" Elevation="0">
                 <MudIcon Icon="@Icons.Material.Rounded.Business" Color="Color.Primary" />
                 <span>Empresas</span>
-                <strong>@_summary.Empresas</strong>
-                <small>RUC, razon social y SUNAT</small>
+                <strong>@_workspace.Empresas.Count</strong>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="4">
-            <MudPaper Class="metric-card" Elevation="0">
+            <MudPaper Class="metric-card compact" Elevation="0">
                 <MudIcon Icon="@Icons.Material.Rounded.Storefront" Color="Color.Secondary" />
                 <span>Establecimientos</span>
-                <strong>@_summary.Establecimientos</strong>
-                <small>Locales, series y formatos</small>
+                <strong>@_workspace.Establecimientos.Count</strong>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="4">
-            <MudPaper Class="metric-card" Elevation="0">
+            <MudPaper Class="metric-card compact" Elevation="0">
                 <MudIcon Icon="@Icons.Material.Rounded.Tune" Color="Color.Tertiary" />
                 <span>Parametros</span>
-                <strong>@_summary.Parametros</strong>
-                <small>Impuestos, moneda y reglas</small>
+                <strong>@_workspace.Parametros.Count</strong>
             </MudPaper>
         </MudItem>
     </MudGrid>
 
     <MudPaper Class="work-panel mt-1" Elevation="0">
-        <div class="panel-title">
-            <div>
-                <h2>Primeras pantallas del modulo</h2>
-                <p>Orden recomendado para no romper dependencias del sistema multilocal.</p>
-            </div>
-            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">cfg_</MudChip>
-        </div>
-        <MudTable Items="_configurationTasks" Dense="true" Hover="true" Elevation="0">
-            <HeaderContent>
-                <MudTh>Pantalla</MudTh>
-                <MudTh>Tabla</MudTh>
-                <MudTh>Estado</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Pantalla">@context.Name</MudTd>
-                <MudTd DataLabel="Tabla"><code>@context.Table</code></MudTd>
-                <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@context.Status</MudChip></MudTd>
-            </RowTemplate>
-        </MudTable>
+        <MudTabs Rounded="true" Class="config-tabs">
+            <MudTabPanel Text="Empresas" Icon="@Icons.Material.Rounded.Business">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" lg="4">
+                        <MudPaper Class="form-panel" Elevation="0">
+                            <h2>Registrar empresa</h2>
+                            <MudTextField @bind-Value="_empresa.Ruc" Label="RUC" MaxLength="11" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_empresa.RazonSocial" Label="Razon social" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_empresa.NombreComercial" Label="Nombre comercial" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_empresa.DireccionFiscal" Label="Direccion fiscal" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                            <MudSelect @bind-Value="_empresa.AmbienteSunat" Label="Ambiente SUNAT" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("beta")">Beta</MudSelectItem>
+                                <MudSelectItem Value="@("produccion")">Produccion</MudSelectItem>
+                            </MudSelect>
+                            <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveEmpresaAsync">
+                                Guardar empresa
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" lg="8">
+                        <MudTable Items="_workspace.Empresas" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                            <HeaderContent>
+                                <MudTh>RUC</MudTh>
+                                <MudTh>Razon social</MudTh>
+                                <MudTh>Direccion fiscal</MudTh>
+                                <MudTh>Estado</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="RUC">@context.Ruc</MudTd>
+                                <MudTd DataLabel="Razon social">@context.RazonSocial</MudTd>
+                                <MudTd DataLabel="Direccion fiscal">@context.DireccionFiscal</MudTd>
+                                <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@context.Estado</MudChip></MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Color="Color.Secondary">Aun no hay empresas registradas.</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Establecimientos" Icon="@Icons.Material.Rounded.Storefront">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" lg="4">
+                        <MudPaper Class="form-panel" Elevation="0">
+                            <h2>Registrar establecimiento</h2>
+                            <MudSelect T="ulong" @bind-Value="_establecimiento.EmpresaId" Label="Empresa" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                @foreach (var empresa in _workspace.Empresas)
+                                {
+                                    <MudSelectItem T="ulong" Value="@empresa.Id">@empresa.RazonSocial</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudTextField @bind-Value="_establecimiento.Codigo" Label="Codigo" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_establecimiento.Nombre" Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_establecimiento.Direccion" Label="Direccion" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                            <div class="split-fields">
+                                <MudTextField @bind-Value="_establecimiento.SerieFactura" Label="Serie factura" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudTextField @bind-Value="_establecimiento.SerieBoleta" Label="Serie boleta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </div>
+                            <MudSelect @bind-Value="_establecimiento.FormatoImpresion" Label="Formato impresion" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("ticket_58")">Ticket 58</MudSelectItem>
+                                <MudSelectItem Value="@("ticket_80")">Ticket 80</MudSelectItem>
+                                <MudSelectItem Value="@("a4")">A4</MudSelectItem>
+                            </MudSelect>
+                            <MudCheckBox @bind-Value="_establecimiento.PermiteStockNegativo" Label="Permitir stock negativo" Color="Color.Warning" />
+                            <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveEstablecimientoAsync">
+                                Guardar establecimiento
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" lg="8">
+                        <MudTable Items="_workspace.Establecimientos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                            <HeaderContent>
+                                <MudTh>Codigo</MudTh>
+                                <MudTh>Nombre</MudTh>
+                                <MudTh>Series</MudTh>
+                                <MudTh>Formato</MudTh>
+                                <MudTh>Stock negativo</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
+                                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                                <MudTd DataLabel="Series">@DisplaySeries(context)</MudTd>
+                                <MudTd DataLabel="Formato">@context.FormatoImpresion</MudTd>
+                                <MudTd DataLabel="Stock negativo">
+                                    <MudChip T="string" Size="Size.Small" Color="@(context.PermiteStockNegativo ? Color.Warning : Color.Success)" Variant="Variant.Outlined">
+                                        @(context.PermiteStockNegativo ? "Permitido" : "Bloqueado")
+                                    </MudChip>
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Color="Color.Secondary">Registra una empresa antes de crear establecimientos.</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Parametros" Icon="@Icons.Material.Rounded.Tune">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" lg="4">
+                        <MudPaper Class="form-panel" Elevation="0">
+                            <h2>Registrar parametro</h2>
+                            <MudSelect T="ulong" @bind-Value="_parametro.EstablecimientoId" Label="Establecimiento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                @foreach (var local in _workspace.Establecimientos)
+                                {
+                                    <MudSelectItem T="ulong" Value="@local.Id">@local.Codigo - @local.Nombre</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudTextField @bind-Value="_parametro.Clave" Label="Clave" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_parametro.Valor" Label="Valor" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                            <MudSelect @bind-Value="_parametro.Tipo" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("string")">Texto</MudSelectItem>
+                                <MudSelectItem Value="@("number")">Numero</MudSelectItem>
+                                <MudSelectItem Value="@("boolean")">Booleano</MudSelectItem>
+                                <MudSelectItem Value="@("json")">JSON</MudSelectItem>
+                                <MudSelectItem Value="@("date")">Fecha</MudSelectItem>
+                            </MudSelect>
+                            <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveParametroAsync">
+                                Guardar parametro
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" lg="8">
+                        <MudTable Items="_workspace.Parametros" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                            <HeaderContent>
+                                <MudTh>Clave</MudTh>
+                                <MudTh>Valor</MudTh>
+                                <MudTh>Tipo</MudTh>
+                                <MudTh>Estado</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Clave">@context.Clave</MudTd>
+                                <MudTd DataLabel="Valor">@context.Valor</MudTd>
+                                <MudTd DataLabel="Tipo">@context.Tipo</MudTd>
+                                <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@context.Estado</MudChip></MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Color="Color.Secondary">Aun no hay parametros registrados.</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+        </MudTabs>
     </MudPaper>
 }
 
 @code {
-    private ConfigurationSummary? _summary;
-
-    private readonly ModuleTask[] _configurationTasks =
-    [
-        new("Empresas", "cfg_empresas", "Siguiente"),
-        new("Establecimientos", "cfg_establecimientos", "Siguiente"),
-        new("Parametros por local", "cfg_parametros", "Pendiente")
-    ];
+    private ConfigurationWorkspace? _workspace;
+    private EmpresaForm _empresa = new();
+    private EstablecimientoForm _establecimiento = new();
+    private ParametroForm _parametro = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _summary = await Modules.GetConfigurationSummaryAsync();
+        await LoadAsync();
     }
 
-    private sealed record ModuleTask(string Name, string Table, string Status);
+    private async Task LoadAsync()
+    {
+        _workspace = await Configuration.GetWorkspaceAsync();
+        if (_workspace.Empresas.Count == 1 && _establecimiento.EmpresaId == 0)
+        {
+            _establecimiento.EmpresaId = _workspace.Empresas[0].Id;
+        }
+
+        if (_workspace.Establecimientos.Count == 1 && _parametro.EstablecimientoId == 0)
+        {
+            _parametro.EstablecimientoId = _workspace.Establecimientos[0].Id;
+        }
+    }
+
+    private async Task SaveEmpresaAsync()
+    {
+        var result = await Configuration.CreateEmpresaAsync(_empresa);
+        Notify(result);
+        if (result.Success)
+        {
+            _empresa = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveEstablecimientoAsync()
+    {
+        var result = await Configuration.CreateEstablecimientoAsync(_establecimiento);
+        Notify(result);
+        if (result.Success)
+        {
+            _establecimiento = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveParametroAsync()
+    {
+        var result = await Configuration.CreateParametroAsync(_parametro);
+        Notify(result);
+        if (result.Success)
+        {
+            _parametro = new();
+            await LoadAsync();
+        }
+    }
+
+    private void Notify(OperationResult result)
+    {
+        Snackbar.Add(result.Message, result.Success ? Severity.Success : Severity.Warning);
+    }
+
+    private static string DisplaySeries(EstablecimientoListItem item)
+    {
+        return $"F: {item.SerieFactura ?? "-"} / B: {item.SerieBoleta ?? "-"}";
+    }
 }

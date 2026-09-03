@@ -31,6 +31,7 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.RazonSocial).HasColumnName("razon_social").HasMaxLength(200);
             entity.Property(x => x.NombreComercial).HasColumnName("nombre_comercial").HasMaxLength(200);
             entity.Property(x => x.DireccionFiscal).HasColumnName("direccion_fiscal").HasMaxLength(300);
+            entity.Property(x => x.AmbienteSunat).HasColumnName("ambiente_sunat").HasMaxLength(20);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -45,6 +46,10 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(20);
             entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(160);
             entity.Property(x => x.Direccion).HasColumnName("direccion").HasMaxLength(300);
+            entity.Property(x => x.SerieFactura).HasColumnName("serie_factura").HasMaxLength(8);
+            entity.Property(x => x.SerieBoleta).HasColumnName("serie_boleta").HasMaxLength(8);
+            entity.Property(x => x.FormatoImpresion).HasColumnName("formato_impresion").HasMaxLength(20);
+            entity.Property(x => x.PermiteStockNegativo).HasColumnName("permite_stock_negativo");
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");

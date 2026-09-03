@@ -10,6 +10,7 @@ Aplicacion web para POS de grifo + minimarket + facturacion electronica, constru
 - Dashboard inicial.
 - Paginas base por modulo.
 - Reglas de acceso por rol para modulos operativos.
+- Modulo Configuracion con listados y formularios iniciales para empresas, establecimientos y parametros.
 
 ## Stack principal
 

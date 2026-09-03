@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using POS_W.Application.Configuracion;
 using POS_W.Application.Modules;
 using POS_W.Application.Navigation;
 using POS_W.Components;
@@ -33,6 +34,7 @@ if (!string.IsNullOrWhiteSpace(posConnectionString))
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+builder.Services.AddScoped<ConfigurationService>();
 builder.Services.AddScoped<ModuleDashboardService>();
 builder.Services.AddSingleton<OperatorAccessService>();
 

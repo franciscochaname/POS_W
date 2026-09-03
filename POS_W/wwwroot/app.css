@@ -194,6 +194,34 @@ a {
     padding: 1rem;
 }
 
+.config-tabs .mud-tabs-panels {
+    padding-top: 1rem;
+}
+
+.form-panel {
+    background: #f9fafb;
+    border: 1px solid var(--pos-border);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.65rem;
+    padding: 1rem;
+}
+
+.form-panel h2 {
+    font-size: 1rem;
+    margin: 0 0 0.25rem;
+}
+
+.split-fields {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.data-table {
+    overflow-x: auto;
+}
+
 .panel-title {
     align-items: flex-start;
     display: flex;
@@ -305,5 +333,9 @@ a {
 
     .page-heading h1 {
         font-size: 1.45rem;
+    }
+
+    .split-fields {
+        grid-template-columns: 1fr;
     }
 }
