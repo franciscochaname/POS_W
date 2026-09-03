@@ -19,6 +19,8 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
     public DbSet<CatUnidadMedida> UnidadesMedida => Set<CatUnidadMedida>();
     public DbSet<CatProducto> Productos => Set<CatProducto>();
     public DbSet<CatPresentacion> Presentaciones => Set<CatPresentacion>();
+    public DbSet<OpKardex> Kardex => Set<OpKardex>();
+    public DbSet<OpLoteVencimiento> LotesVencimientos => Set<OpLoteVencimiento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -202,6 +204,46 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(120);
             entity.Property(x => x.FactorUnidadBase).HasColumnName("factor_unidad_base").HasPrecision(10, 4);
             entity.Property(x => x.PrecioVenta).HasColumnName("precio_venta").HasPrecision(12, 2);
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        });
+
+        modelBuilder.Entity<OpKardex>(entity =>
+        {
+            entity.ToTable("op_kardex");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.EstablecimientoId).HasColumnName("establecimiento_id");
+            entity.Property(x => x.ProductoId).HasColumnName("producto_id");
+            entity.Property(x => x.PresentacionId).HasColumnName("presentacion_id");
+            entity.Property(x => x.LoteId).HasColumnName("lote_id");
+            entity.Property(x => x.UsuarioId).HasColumnName("usuario_id");
+            entity.Property(x => x.TipoMovimiento).HasColumnName("tipo_movimiento").HasMaxLength(40);
+            entity.Property(x => x.DocumentoTipo).HasColumnName("documento_tipo").HasMaxLength(40);
+            entity.Property(x => x.DocumentoId).HasColumnName("documento_id");
+            entity.Property(x => x.EntradaBase).HasColumnName("entrada_base").HasPrecision(10, 4);
+            entity.Property(x => x.SalidaBase).HasColumnName("salida_base").HasPrecision(10, 4);
+            entity.Property(x => x.SaldoBase).HasColumnName("saldo_base").HasPrecision(10, 4);
+            entity.Property(x => x.CostoUnitario).HasColumnName("costo_unitario").HasPrecision(12, 4);
+            entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+        });
+
+        modelBuilder.Entity<OpLoteVencimiento>(entity =>
+        {
+            entity.ToTable("op_lotes_vencimientos");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ProductoId).HasColumnName("producto_id");
+            entity.Property(x => x.ProveedorId).HasColumnName("proveedor_id");
+            entity.Property(x => x.CompraDetalleId).HasColumnName("compra_detalle_id");
+            entity.Property(x => x.Lote).HasColumnName("lote").HasMaxLength(80);
+            entity.Property(x => x.FechaFabricacion).HasColumnName("fecha_fabricacion");
+            entity.Property(x => x.FechaVencimiento).HasColumnName("fecha_vencimiento");
+            entity.Property(x => x.CantidadInicialBase).HasColumnName("cantidad_inicial_base").HasPrecision(10, 4);
+            entity.Property(x => x.CantidadActualBase).HasColumnName("cantidad_actual_base").HasPrecision(10, 4);
+            entity.Property(x => x.CostoUnitario).HasColumnName("costo_unitario").HasPrecision(12, 4);
+            entity.Property(x => x.Ubicacion).HasColumnName("ubicacion").HasMaxLength(160);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });

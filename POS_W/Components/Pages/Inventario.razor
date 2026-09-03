@@ -1,0 +1,321 @@
+@page "/inventario"
+@inject InventoryService Inventory
+@inject OperatorAccessService Access
+@inject ISnackbar Snackbar
+
+<PageTitle>Inventario - POS</PageTitle>
+
+@if (!Access.CanAccess("inventario", Access.CurrentOperator.Role))
+{
+    <AccessDenied ModuleName="Inventario" />
+}
+else
+{
+    <section class="page-heading">
+        <div>
+            <span class="eyebrow">Stock atomico</span>
+            <h1>Inventario</h1>
+            <p>Kardex, ajustes, mermas, saldos reconstruibles y lotes con vencimiento.</p>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadAsync">
+            Actualizar
+        </MudButton>
+    </section>
+
+    @if (_workspace is null)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <DatabaseNotice IsConfigured="_workspace.DatabaseConfigured" Message="@_workspace.StatusMessage" />
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Inventory2" Color="Color.Primary" />
+                    <span>Productos con saldo</span>
+                    <strong>@_workspace.Saldos.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.WarningAmber" Color="Color.Warning" />
+                    <span>Bajo minimo</span>
+                    <strong>@_workspace.Saldos.Count(x => x.BajoMinimo)</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.History" Color="Color.Info" />
+                    <span>Movimientos recientes</span>
+                    <strong>@_workspace.Movimientos.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.EventBusy" Color="Color.Error" />
+                    <span>Lotes por vencer</span>
+                    <strong>@_workspace.Lotes.Count(IsExpiringSoon)</strong>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="work-panel mt-1" Elevation="0">
+            <MudTabs Rounded="true" Class="config-tabs">
+                <MudTabPanel Text="Kardex" Icon="@Icons.Material.Rounded.SyncAlt">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Ajuste de inventario</h2>
+                                <MudSelect T="ulong" @bind-Value="_adjustment.EstablecimientoId" Label="Establecimiento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var local in _workspace.Establecimientos)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@local.Id">@local.Codigo - @local.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect T="ulong" @bind-Value="_adjustment.ProductoId" Label="Producto" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var product in _workspace.Productos)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@product.Id">@product.CodigoInterno - @product.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect T="ulong" @bind-Value="_adjustment.UsuarioId" Label="Responsable" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var user in _workspace.Usuarios)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@user.Id">@user.Apellidos, @user.Nombres</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect T="string" @bind-Value="_adjustment.TipoMovimiento" Label="Tipo movimiento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem T="string" Value="@("ajuste_positivo")">Ajuste positivo</MudSelectItem>
+                                    <MudSelectItem T="string" Value="@("ajuste_negativo")">Ajuste negativo</MudSelectItem>
+                                    <MudSelectItem T="string" Value="@("merma")">Merma</MudSelectItem>
+                                    <MudSelectItem T="string" Value="@("correccion")">Correccion</MudSelectItem>
+                                </MudSelect>
+                                <div class="split-fields">
+                                    <MudNumericField T="decimal" @bind-Value="_adjustment.CantidadBase" Label="Cantidad base" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0.0001m" Format="N4" />
+                                    <MudNumericField T="decimal" @bind-Value="_adjustment.CostoUnitario" Label="Costo unitario" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N4" />
+                                </div>
+                                <MudTextField @bind-Value="_adjustment.Observacion" Label="Observacion" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
+                                    Salidas y mermas se rechazan si dejan el saldo en negativo.
+                                </MudAlert>
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveAdjustmentAsync">
+                                    Registrar movimiento
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Movimientos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Fecha</MudTh>
+                                    <MudTh>Producto</MudTh>
+                                    <MudTh>Tipo</MudTh>
+                                    <MudTh Class="text-right">Entrada</MudTh>
+                                    <MudTh Class="text-right">Salida</MudTh>
+                                    <MudTh Class="text-right">Saldo</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Fecha">@context.CreatedAt.ToString("dd/MM HH:mm")</MudTd>
+                                    <MudTd DataLabel="Producto">@ProductName(context.ProductoId)</MudTd>
+                                    <MudTd DataLabel="Tipo">@MovementLabel(context.TipoMovimiento)</MudTd>
+                                    <MudTd DataLabel="Entrada" Class="text-right">@context.EntradaBase.ToString("N4")</MudTd>
+                                    <MudTd DataLabel="Salida" Class="text-right">@context.SalidaBase.ToString("N4")</MudTd>
+                                    <MudTd DataLabel="Saldo" Class="text-right"><strong>@context.SaldoBase.ToString("N4")</strong></MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText Color="Color.Secondary">Aun no hay movimientos de kardex.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Saldos" Icon="@Icons.Material.Rounded.Assessment">
+                    <MudTable Items="_workspace.Saldos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                        <HeaderContent>
+                            <MudTh>Codigo</MudTh>
+                            <MudTh>Producto</MudTh>
+                            <MudTh>Unidad base</MudTh>
+                            <MudTh Class="text-right">Saldo</MudTh>
+                            <MudTh Class="text-right">Minimo</MudTh>
+                            <MudTh>Estado</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Codigo">@context.ProductCode</MudTd>
+                            <MudTd DataLabel="Producto">@context.ProductName</MudTd>
+                            <MudTd DataLabel="Unidad base">@UnitName(context.UnitId)</MudTd>
+                            <MudTd DataLabel="Saldo" Class="text-right"><strong>@context.SaldoBase.ToString("N4")</strong></MudTd>
+                            <MudTd DataLabel="Minimo" Class="text-right">@context.StockMinimo.ToString("N4")</MudTd>
+                            <MudTd DataLabel="Estado">
+                                <MudChip T="string" Size="Size.Small" Color="@(context.BajoMinimo ? Color.Warning : Color.Success)" Variant="Variant.Outlined">
+                                    @(context.BajoMinimo ? "Bajo minimo" : "Disponible")
+                                </MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary">Los saldos aparecen al registrar movimientos en kardex.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Lotes" Icon="@Icons.Material.Rounded.Event">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Registrar lote</h2>
+                                <MudSelect T="ulong" @bind-Value="_lot.ProductoId" Label="Producto" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var product in _workspace.Productos)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@product.Id">@product.CodigoInterno - @product.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudTextField @bind-Value="_lot.Lote" Label="Codigo de lote" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudDatePicker @bind-Date="_lot.FechaVencimiento" Label="Vencimiento" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="split-fields">
+                                    <MudNumericField T="decimal" @bind-Value="_lot.CantidadInicialBase" Label="Cantidad base" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0.0001m" Format="N4" />
+                                    <MudNumericField T="decimal" @bind-Value="_lot.CostoUnitario" Label="Costo" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N4" />
+                                </div>
+                                <MudTextField @bind-Value="_lot.Ubicacion" Label="Ubicacion" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveLotAsync">
+                                    Guardar lote
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Lotes" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Producto</MudTh>
+                                    <MudTh>Lote</MudTh>
+                                    <MudTh>Vencimiento</MudTh>
+                                    <MudTh Class="text-right">Actual</MudTh>
+                                    <MudTh>Ubicacion</MudTh>
+                                    <MudTh>Estado</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Producto">@ProductName(context.ProductoId)</MudTd>
+                                    <MudTd DataLabel="Lote">@context.Lote</MudTd>
+                                    <MudTd DataLabel="Vencimiento">@DisplayDate(context.FechaVencimiento)</MudTd>
+                                    <MudTd DataLabel="Actual" Class="text-right">@context.CantidadActualBase.ToString("N4")</MudTd>
+                                    <MudTd DataLabel="Ubicacion">@context.Ubicacion</MudTd>
+                                    <MudTd DataLabel="Estado">
+                                        <MudChip T="string" Size="Size.Small" Color="@LotColor(context)" Variant="Variant.Outlined">@LotLabel(context)</MudChip>
+                                    </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText Color="Color.Secondary">Aun no hay lotes registrados.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+    }
+}
+
+@code {
+    private InventoryWorkspace? _workspace;
+    private InventoryAdjustmentForm _adjustment = new();
+    private LotForm _lot = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _workspace = await Inventory.GetWorkspaceAsync();
+
+        if (_workspace.Establecimientos.Count == 1 && _adjustment.EstablecimientoId == 0)
+        {
+            _adjustment.EstablecimientoId = _workspace.Establecimientos[0].Id;
+        }
+
+        if (_workspace.Productos.Count == 1)
+        {
+            _adjustment.ProductoId = _adjustment.ProductoId == 0 ? _workspace.Productos[0].Id : _adjustment.ProductoId;
+            _lot.ProductoId = _lot.ProductoId == 0 ? _workspace.Productos[0].Id : _lot.ProductoId;
+        }
+
+        if (_workspace.Usuarios.Count == 1 && _adjustment.UsuarioId == 0)
+        {
+            _adjustment.UsuarioId = _workspace.Usuarios[0].Id;
+        }
+    }
+
+    private async Task SaveAdjustmentAsync()
+    {
+        var result = await Inventory.CreateAdjustmentAsync(_adjustment);
+        Notify(result);
+        if (result.Success)
+        {
+            _adjustment = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveLotAsync()
+    {
+        var result = await Inventory.CreateLotAsync(_lot);
+        Notify(result);
+        if (result.Success)
+        {
+            _lot = new();
+            await LoadAsync();
+        }
+    }
+
+    private void Notify(InventoryOperationResult result)
+    {
+        Snackbar.Add(result.Message, result.Success ? Severity.Success : Severity.Warning);
+    }
+
+    private string ProductName(ulong productId)
+    {
+        var product = _workspace?.Productos.FirstOrDefault(x => x.Id == productId);
+        return product is null ? "-" : $"{product.CodigoInterno} - {product.Nombre}";
+    }
+
+    private string UnitName(ulong unitId)
+    {
+        var unit = _workspace?.Unidades.FirstOrDefault(x => x.Id == unitId);
+        return unit is null ? "-" : $"{unit.Codigo} - {unit.Nombre}";
+    }
+
+    private static string MovementLabel(string type)
+    {
+        return type.Replace("_", " ");
+    }
+
+    private static bool IsExpiringSoon(LotItem lot)
+    {
+        return lot.FechaVencimiento is not null && lot.FechaVencimiento <= DateOnly.FromDateTime(DateTime.Today.AddDays(30));
+    }
+
+    private static string DisplayDate(DateOnly? value)
+    {
+        return value?.ToString("dd/MM/yyyy") ?? "-";
+    }
+
+    private static Color LotColor(LotItem lot)
+    {
+        if (lot.FechaVencimiento is not null && lot.FechaVencimiento < DateOnly.FromDateTime(DateTime.Today))
+        {
+            return Color.Error;
+        }
+
+        return IsExpiringSoon(lot) ? Color.Warning : Color.Success;
+    }
+
+    private static string LotLabel(LotItem lot)
+    {
+        if (lot.FechaVencimiento is not null && lot.FechaVencimiento < DateOnly.FromDateTime(DateTime.Today))
+        {
+            return "Vencido";
+        }
+
+        return IsExpiringSoon(lot) ? "Por vencer" : lot.Estado;
+    }
+}
