@@ -1,0 +1,87 @@
+@page "/pos"
+@page "/combustible"
+@page "/inventario"
+@page "/compras"
+@page "/clientes"
+@page "/proveedores"
+@page "/facturacion"
+@page "/reportes"
+@inject NavigationManager Navigation
+@inject OperatorAccessService Access
+
+<PageTitle>@(Module?.Title ?? "Acceso restringido") - POS</PageTitle>
+
+@if (Module is null || !Access.CanAccess(CurrentRoute, Access.CurrentOperator.Role))
+{
+    <AccessDenied ModuleName="@(Module?.Title ?? CurrentRoute)" />
+}
+else
+{
+    <section class="page-heading">
+        <div>
+            <span class="eyebrow">@Module.Area</span>
+            <h1>@Module.Title</h1>
+            <p>@Module.Description</p>
+        </div>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add">
+            Nuevo
+        </MudButton>
+    </section>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Alcance inicial</h2>
+                        <p>Primer bloque funcional que se desarrollara para este modulo.</p>
+                    </div>
+                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">Modulo</MudChip>
+                </div>
+                <MudList T="string" Dense="true">
+                    @foreach (var item in TasksFor(Module.Route))
+                    {
+                        <MudListItem Icon="@Icons.Material.Rounded.RadioButtonUnchecked">@item</MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Tablas base</h2>
+                        <p>Entidades principales ya creadas en MySQL.</p>
+                    </div>
+                </div>
+                <div class="chip-list">
+                    @foreach (var table in Module.RelatedTables)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Default">@table</MudChip>
+                    }
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private string CurrentRoute => Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/').ToLowerInvariant();
+    private AppModule? Module => Access.GetModule(CurrentRoute);
+
+    private static string[] TasksFor(string route)
+    {
+        return route switch
+        {
+            "pos" => ["Busqueda por codigo/barra", "Carrito con presentaciones", "Validacion de stock base", "Pago y movimiento de caja"],
+            "combustible" => ["Registrar infraestructura", "Configurar combustible por manguera", "Controlar lecturas", "Despachos por lectura final menos inicial"],
+            "inventario" => ["Kardex por producto", "Conversion por presentacion", "Lotes y vencimientos", "Alertas de stock bajo"],
+            "compras" => ["Proveedor tributario", "Cabecera y detalle de compra", "Validacion de duplicados XML", "Entrada al kardex"],
+            "clientes" => ["Registro rapido", "Consulta DNI/RUC", "Direcciones y contacto", "Historial de comprobantes"],
+            "proveedores" => ["Alta de proveedor", "Consulta RUC", "Condiciones de pago", "Estado operativo"],
+            "facturacion" => ["Generar comprobante", "Guardar XML/hash", "Enviar o encolar SUNAT", "Procesar respuestas"],
+            "reportes" => ["Filtros por fecha y establecimiento", "Resumen por modulo", "Exportacion Excel/PDF", "Drill-down operativo"],
+            _ => ["Definir alcance"]
+        };
+    }
+}

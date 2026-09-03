@@ -1,0 +1,97 @@
+@page "/catalogo"
+@inject ModuleDashboardService Modules
+
+<PageTitle>Catalogo - POS</PageTitle>
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">Productos y precios</span>
+        <h1>Catalogo</h1>
+        <p>Unidades base, presentaciones, conversiones, productos, precios e historial.</p>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddBox">
+        Nuevo producto
+    </MudButton>
+</section>
+
+@if (_summary is null)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Categorias</span>
+                <strong>@_summary.Categorias</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Marcas</span>
+                <strong>@_summary.Marcas</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Unidades</span>
+                <strong>@_summary.Unidades</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Productos</span>
+                <strong>@_summary.Productos</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Presentaciones</span>
+                <strong>@_summary.Presentaciones</strong>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="work-panel mt-1" Elevation="0">
+        <div class="panel-title">
+            <div>
+                <h2>Regla critica de inventario</h2>
+                <p>El sistema vende por presentacion, pero descuenta y reconstruye stock en unidad base.</p>
+            </div>
+            <MudChip T="string" Color="Color.Warning" Variant="Variant.Outlined" Size="Size.Small">DECIMAL(10,4)</MudChip>
+        </div>
+        <MudTable Items="_examples" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Presentacion</MudTh>
+                <MudTh>Factor unidad base</MudTh>
+                <MudTh>Uso</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Presentacion">@context.Name</MudTd>
+                <MudTd DataLabel="Factor">@context.Factor</MudTd>
+                <MudTd DataLabel="Uso">@context.Use</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
+
+@code {
+    private CatalogSummary? _summary;
+
+    private readonly PresentationExample[] _examples =
+    [
+        new("Unidad", "1.0000", "Venta individual y unidad base"),
+        new("Paquete", "6.0000", "Venta por pack sin duplicar producto"),
+        new("Caja", "24.0000", "Compra o venta mayorista")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _summary = await Modules.GetCatalogSummaryAsync();
+    }
+
+    private sealed record PresentationExample(string Name, string Factor, string Use);
+}

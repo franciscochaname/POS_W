@@ -1,0 +1,91 @@
+@page "/configuracion"
+@inject ModuleDashboardService Modules
+
+<PageTitle>Configuracion - POS</PageTitle>
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">Modulo base</span>
+        <h1>Configuracion</h1>
+        <p>Empresa, establecimientos, series, impuestos y reglas comerciales por local.</p>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddBusiness">
+        Registrar empresa
+    </MudButton>
+</section>
+
+@if (_summary is null)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="metric-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.Business" Color="Color.Primary" />
+                <span>Empresas</span>
+                <strong>@_summary.Empresas</strong>
+                <small>RUC, razon social y SUNAT</small>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="metric-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.Storefront" Color="Color.Secondary" />
+                <span>Establecimientos</span>
+                <strong>@_summary.Establecimientos</strong>
+                <small>Locales, series y formatos</small>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="metric-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.Tune" Color="Color.Tertiary" />
+                <span>Parametros</span>
+                <strong>@_summary.Parametros</strong>
+                <small>Impuestos, moneda y reglas</small>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="work-panel mt-1" Elevation="0">
+        <div class="panel-title">
+            <div>
+                <h2>Primeras pantallas del modulo</h2>
+                <p>Orden recomendado para no romper dependencias del sistema multilocal.</p>
+            </div>
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">cfg_</MudChip>
+        </div>
+        <MudTable Items="_configurationTasks" Dense="true" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Pantalla</MudTh>
+                <MudTh>Tabla</MudTh>
+                <MudTh>Estado</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Pantalla">@context.Name</MudTd>
+                <MudTd DataLabel="Tabla"><code>@context.Table</code></MudTd>
+                <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@context.Status</MudChip></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
+
+@code {
+    private ConfigurationSummary? _summary;
+
+    private readonly ModuleTask[] _configurationTasks =
+    [
+        new("Empresas", "cfg_empresas", "Siguiente"),
+        new("Establecimientos", "cfg_establecimientos", "Siguiente"),
+        new("Parametros por local", "cfg_parametros", "Pendiente")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _summary = await Modules.GetConfigurationSummaryAsync();
+    }
+
+    private sealed record ModuleTask(string Name, string Table, string Status);
+}

@@ -1,0 +1,81 @@
+@inherits LayoutComponentBase
+@inject OperatorAccessService Access
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout Class="pos-shell">
+    <MudAppBar Elevation="0" Dense="true" Class="pos-appbar">
+        <MudIconButton Icon="@Icons.Material.Rounded.Menu" Color="Color.Inherit" Edge="Edge.Start" Class="mobile-menu" OnClick="@ToggleDrawer" />
+        <div class="appbar-title">
+            <span class="appbar-kicker">@Access.CurrentOperator.Establishment</span>
+            <strong>@Access.CurrentOperator.Turn - @Access.CurrentOperator.Role</strong>
+        </div>
+        <MudSpacer />
+        <MudChip T="string" Icon="@Icons.Material.Rounded.Circle" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small">Sistema activo</MudChip>
+        <MudIconButton Icon="@Icons.Material.Rounded.Notifications" Color="Color.Inherit" />
+        <MudAvatar Color="Color.Primary" Size="Size.Small">AD</MudAvatar>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="0" Class="pos-sidebar">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="pos-main">
+        <article class="pos-content">
+            @Body
+        </article>
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocurrio un error inesperado.
+    <a href="." class="reload">Recargar</a>
+    <span class="dismiss">x</span>
+</div>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#0F766E",
+            PrimaryDarken = "#115E59",
+            Secondary = "#2563EB",
+            Tertiary = "#EAB308",
+            Success = "#16A34A",
+            Error = "#DC2626",
+            Background = "#F6F7F9",
+            Surface = "#FFFFFF",
+            TextPrimary = "#17202A",
+            TextSecondary = "#5D6673",
+            LinesDefault = "#DDE3EA",
+            DrawerBackground = "#10201F",
+            DrawerText = "#D8E6E3",
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#17202A"
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DrawerWidthLeft = "280px"
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Inter", "Roboto", "Arial", "sans-serif"],
+                FontSize = "0.95rem",
+                LetterSpacing = "0"
+            }
+        }
+    };
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

@@ -1,0 +1,63 @@
+.brand-panel {
+    align-items: center;
+    display: flex;
+    gap: 0.85rem;
+    padding: 1.25rem 1.1rem 1rem;
+}
+
+.brand-mark {
+    align-items: center;
+    background: #0f766e;
+    border-radius: 8px;
+    color: #ffffff;
+    display: grid;
+    font-size: 1.1rem;
+    font-weight: 800;
+    height: 42px;
+    place-items: center;
+    width: 42px;
+}
+
+.brand-title {
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.brand-subtitle {
+    color: #9fb8b4;
+    font-size: 0.78rem;
+    margin-top: 0.12rem;
+}
+
+.module-nav {
+    padding: 0 0.7rem;
+}
+
+.operator-panel {
+    align-items: center;
+    border-top: 1px solid rgba(221, 227, 234, 0.12);
+    bottom: 0;
+    display: flex;
+    gap: 0.8rem;
+    left: 0;
+    padding: 1rem;
+    position: absolute;
+    right: 0;
+}
+
+.operator-copy {
+    display: grid;
+    line-height: 1.2;
+}
+
+.operator-copy strong {
+    color: #ffffff;
+    font-size: 0.9rem;
+}
+
+.operator-copy span {
+    color: #9fb8b4;
+    font-size: 0.78rem;
+}

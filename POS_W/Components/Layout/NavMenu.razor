@@ -1,0 +1,31 @@
+@inject OperatorAccessService Access
+
+<div class="brand-panel">
+    <div class="brand-mark">P</div>
+    <div>
+        <div class="brand-title">POS</div>
+        <div class="brand-subtitle">Grifo + minimarket</div>
+    </div>
+</div>
+
+<MudNavMenu Class="module-nav" Rounded="true" Margin="Margin.Dense">
+    @foreach (var module in Access.GetVisibleModules())
+    {
+        <MudNavLink Href="@module.Route" Match="@GetMatch(module.Route)" Icon="@module.Icon">@module.Title</MudNavLink>
+    }
+</MudNavMenu>
+
+<div class="operator-panel">
+    <MudAvatar Color="Color.Primary" Size="Size.Medium">AD</MudAvatar>
+    <div class="operator-copy">
+        <strong>@Access.CurrentOperator.DisplayName</strong>
+        <span>@Access.CurrentOperator.Role</span>
+    </div>
+</div>
+
+@code {
+    private static NavLinkMatch GetMatch(string route)
+    {
+        return string.IsNullOrWhiteSpace(route) ? NavLinkMatch.All : NavLinkMatch.Prefix;
+    }
+}

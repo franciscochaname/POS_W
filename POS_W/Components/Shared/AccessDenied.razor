@@ -1,0 +1,15 @@
+@inject OperatorAccessService Access
+
+<MudPaper Class="work-panel access-denied" Elevation="0">
+    <MudIcon Icon="@Icons.Material.Rounded.Lock" Color="Color.Warning" />
+    <div>
+        <span class="eyebrow">Acceso restringido</span>
+        <h1>@ModuleName</h1>
+        <p>El rol @Access.CurrentOperator.Role no tiene permiso para este modulo. Los cajeros y griferos solo deben ver caja, arqueo y las funciones directamente relacionadas a su operacion.</p>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public string ModuleName { get; set; } = "Modulo";
+}

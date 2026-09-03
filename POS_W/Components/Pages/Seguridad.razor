@@ -1,0 +1,106 @@
+@page "/seguridad"
+@inject ModuleDashboardService Modules
+
+<PageTitle>Seguridad - POS</PageTitle>
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">Trazabilidad</span>
+        <h1>Seguridad</h1>
+        <p>Roles, permisos, usuarios, sesiones, turnos y auditoria sensible.</p>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PersonAdd">
+        Nuevo usuario
+    </MudButton>
+</section>
+
+@if (_summary is null)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Roles</span>
+                <strong>@_summary.Roles</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Permisos</span>
+                <strong>@_summary.Permisos</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Usuarios</span>
+                <strong>@_summary.Usuarios</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Sesiones activas</span>
+                <strong>@_summary.SesionesActivas</strong>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <span>Turnos abiertos</span>
+                <strong>@_summary.TurnosAbiertos</strong>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="3" Class="mt-1">
+        <MudItem xs="12" md="6">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Permisos granulares</h2>
+                        <p>El control debe mantenerse por modulo, pantalla y accion.</p>
+                    </div>
+                </div>
+                <div class="chip-list">
+                    @foreach (var action in _actions)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@action</MudChip>
+                    }
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Auditoria obligatoria</h2>
+                        <p>Cambios sensibles siempre pasan por bitacora.</p>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Rounded.FactCheck" Color="Color.Primary" />
+                </div>
+                <MudList T="string" Dense="true">
+                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Cambios de precio y stock.</MudListItem>
+                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Descuentos, anulaciones y devoluciones.</MudListItem>
+                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Aperturas, cierres y cambios de permisos.</MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private SecuritySummary? _summary;
+
+    private readonly string[] _actions =
+    [
+        "ver", "crear", "editar", "anular", "aprobar", "exportar", "imprimir", "autorizar descuento"
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _summary = await Modules.GetSecuritySummaryAsync();
+    }
+}
