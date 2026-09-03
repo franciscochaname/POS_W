@@ -1,106 +1,294 @@
 @page "/seguridad"
-@inject ModuleDashboardService Modules
+@inject SecurityService Security
+@inject OperatorAccessService Access
+@inject ISnackbar Snackbar
 
 <PageTitle>Seguridad - POS</PageTitle>
 
-<section class="page-heading">
-    <div>
-        <span class="eyebrow">Trazabilidad</span>
-        <h1>Seguridad</h1>
-        <p>Roles, permisos, usuarios, sesiones, turnos y auditoria sensible.</p>
-    </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PersonAdd">
-        Nuevo usuario
-    </MudButton>
-</section>
-
-@if (_summary is null)
+@if (!Access.CanAccess("seguridad", Access.CurrentOperator.Role))
 {
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    <AccessDenied ModuleName="Seguridad" />
 }
 else
 {
-    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
+    <section class="page-heading">
+        <div>
+            <span class="eyebrow">Trazabilidad</span>
+            <h1>Seguridad</h1>
+            <p>Roles, permisos, usuarios, sesiones, turnos y auditoria sensible.</p>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadAsync">
+            Actualizar
+        </MudButton>
+    </section>
 
-    <MudGrid Spacing="3">
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Roles</span>
-                <strong>@_summary.Roles</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Permisos</span>
-                <strong>@_summary.Permisos</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Usuarios</span>
-                <strong>@_summary.Usuarios</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="3">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Sesiones activas</span>
-                <strong>@_summary.SesionesActivas</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="3">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Turnos abiertos</span>
-                <strong>@_summary.TurnosAbiertos</strong>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+    @if (_workspace is null)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <DatabaseNotice IsConfigured="_workspace.DatabaseConfigured" Message="@_workspace.StatusMessage" />
 
-    <MudGrid Spacing="3" Class="mt-1">
-        <MudItem xs="12" md="6">
-            <MudPaper Class="work-panel" Elevation="0">
-                <div class="panel-title">
-                    <div>
-                        <h2>Permisos granulares</h2>
-                        <p>El control debe mantenerse por modulo, pantalla y accion.</p>
-                    </div>
-                </div>
-                <div class="chip-list">
-                    @foreach (var action in _actions)
-                    {
-                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@action</MudChip>
-                    }
-                </div>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudPaper Class="work-panel" Elevation="0">
-                <div class="panel-title">
-                    <div>
-                        <h2>Auditoria obligatoria</h2>
-                        <p>Cambios sensibles siempre pasan por bitacora.</p>
-                    </div>
-                    <MudIcon Icon="@Icons.Material.Rounded.FactCheck" Color="Color.Primary" />
-                </div>
-                <MudList T="string" Dense="true">
-                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Cambios de precio y stock.</MudListItem>
-                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Descuentos, anulaciones y devoluciones.</MudListItem>
-                    <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Aperturas, cierres y cambios de permisos.</MudListItem>
-                </MudList>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <span>Roles</span>
+                    <strong>@_workspace.Roles.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <span>Permisos</span>
+                    <strong>@_workspace.Permisos.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <span>Usuarios</span>
+                    <strong>@_workspace.Usuarios.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <span>Sesiones activas</span>
+                    <strong>@_workspace.SesionesActivas</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <span>Turnos abiertos</span>
+                    <strong>@_workspace.TurnosAbiertos</strong>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="work-panel mt-1" Elevation="0">
+            <MudTabs Rounded="true" Class="config-tabs">
+                <MudTabPanel Text="Usuarios" Icon="@Icons.Material.Rounded.Groups">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Registrar usuario</h2>
+                                <MudSelect T="ulong" @bind-Value="_usuario.RolId" Label="Rol" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var rol in _workspace.Roles)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@rol.Id">@rol.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect T="ulong?" @bind-Value="_usuario.EstablecimientoBaseId" Label="Establecimiento base" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                    @foreach (var local in _workspace.Establecimientos)
+                                    {
+                                        <MudSelectItem T="ulong?" Value="@((ulong?)local.Id)">@local.Codigo - @local.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudTextField @bind-Value="_usuario.Username" Label="Usuario" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudTextField @bind-Value="_usuario.Password" Label="Clave temporal" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="split-fields">
+                                    <MudTextField @bind-Value="_usuario.Nombres" Label="Nombres" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    <MudTextField @bind-Value="_usuario.Apellidos" Label="Apellidos" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <div class="split-fields">
+                                    <MudSelect T="string" @bind-Value="_usuario.DocumentoTipo" Label="Documento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                        <MudSelectItem T="string" Value="@("DNI")">DNI</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("CE")">CE</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("PASAPORTE")">Pasaporte</MudSelectItem>
+                                    </MudSelect>
+                                    <MudTextField @bind-Value="_usuario.DocumentoNumero" Label="Numero" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <MudTextField @bind-Value="_usuario.Email" Label="Correo" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveUserAsync">
+                                    Guardar usuario
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Usuarios" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Usuario</MudTh>
+                                    <MudTh>Nombre</MudTh>
+                                    <MudTh>Rol</MudTh>
+                                    <MudTh>Establecimiento</MudTh>
+                                    <MudTh>Estado</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Usuario">@context.Username</MudTd>
+                                    <MudTd DataLabel="Nombre">@context.Apellidos, @context.Nombres</MudTd>
+                                    <MudTd DataLabel="Rol">@RoleName(context.RolId)</MudTd>
+                                    <MudTd DataLabel="Establecimiento">@EstablishmentName(context.EstablecimientoBaseId)</MudTd>
+                                    <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@context.Estado</MudChip></MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText Color="Color.Secondary">Aun no hay usuarios registrados.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Roles" Icon="@Icons.Material.Rounded.AdminPanelSettings">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Registrar rol</h2>
+                                <MudTextField @bind-Value="_rol.Nombre" Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudTextField @bind-Value="_rol.Descripcion" Label="Descripcion" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                                <MudSlider T="int" @bind-Value="_rol.NivelAutorizacion" Min="0" Max="100" Step="5" Color="Color.Primary">Nivel de autorizacion: @_rol.NivelAutorizacion</MudSlider>
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveRoleAsync">
+                                    Guardar rol
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Roles" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Rol</MudTh>
+                                    <MudTh>Descripcion</MudTh>
+                                    <MudTh>Nivel</MudTh>
+                                    <MudTh>Modulos visibles</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Rol">@context.Nombre</MudTd>
+                                    <MudTd DataLabel="Descripcion">@context.Descripcion</MudTd>
+                                    <MudTd DataLabel="Nivel">@context.NivelAutorizacion</MudTd>
+                                    <MudTd DataLabel="Modulos visibles">
+                                        <div class="chip-list tight">
+                                            @foreach (var module in Access.GetModulesForRole(context.Nombre))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@module.Title</MudChip>
+                                            }
+                                        </div>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Permisos" Icon="@Icons.Material.Rounded.Key">
+                    <MudTable Items="_workspace.Permisos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                        <HeaderContent>
+                            <MudTh>Modulo</MudTh>
+                            <MudTh>Pantalla</MudTh>
+                            <MudTh>Accion</MudTh>
+                            <MudTh>Estado</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Modulo">@context.Modulo</MudTd>
+                            <MudTd DataLabel="Pantalla">@context.Pantalla</MudTd>
+                            <MudTd DataLabel="Accion">@context.Accion</MudTd>
+                            <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@context.Estado</MudChip></MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Flujo operativo" Icon="@Icons.Material.Rounded.Route">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" md="6">
+                            <MudPaper Class="work-panel soft" Elevation="0">
+                                <div class="panel-title">
+                                    <div>
+                                        <h2>Cajero</h2>
+                                        <p>Acceso limitado a caja, venta y documentos generados por su operacion.</p>
+                                    </div>
+                                    <MudIcon Icon="@Icons.Material.Rounded.PointOfSale" Color="Color.Primary" />
+                                </div>
+                                <div class="chip-list">
+                                    @foreach (var module in Access.GetModulesForRole("Cajero"))
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small">@module.Title</MudChip>
+                                    }
+                                </div>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudPaper Class="work-panel soft" Elevation="0">
+                                <div class="panel-title">
+                                    <div>
+                                        <h2>Grifero</h2>
+                                        <p>Acceso limitado a combustible, lecturas, despachos y caja asignada.</p>
+                                    </div>
+                                    <MudIcon Icon="@Icons.Material.Rounded.LocalGasStation" Color="Color.Warning" />
+                                </div>
+                                <div class="chip-list">
+                                    @foreach (var module in Access.GetModulesForRole("Grifero"))
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small">@module.Title</MudChip>
+                                    }
+                                </div>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+    }
 }
 
 @code {
-    private SecuritySummary? _summary;
-
-    private readonly string[] _actions =
-    [
-        "ver", "crear", "editar", "anular", "aprobar", "exportar", "imprimir", "autorizar descuento"
-    ];
+    private SecurityWorkspace? _workspace;
+    private UsuarioForm _usuario = new();
+    private RolForm _rol = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _summary = await Modules.GetSecuritySummaryAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _workspace = await Security.GetWorkspaceAsync();
+        if (_workspace.Roles.Count == 1 && _usuario.RolId == 0)
+        {
+            _usuario.RolId = _workspace.Roles[0].Id;
+        }
+
+        if (_workspace.Establecimientos.Count == 1 && _usuario.EstablecimientoBaseId is null)
+        {
+            _usuario.EstablecimientoBaseId = _workspace.Establecimientos[0].Id;
+        }
+    }
+
+    private async Task SaveUserAsync()
+    {
+        var result = await Security.CreateUserAsync(_usuario);
+        Notify(result);
+        if (result.Success)
+        {
+            _usuario = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveRoleAsync()
+    {
+        var result = await Security.CreateRoleAsync(_rol);
+        Notify(result);
+        if (result.Success)
+        {
+            _rol = new();
+            await LoadAsync();
+        }
+    }
+
+    private void Notify(SecurityOperationResult result)
+    {
+        Snackbar.Add(result.Message, result.Success ? Severity.Success : Severity.Warning);
+    }
+
+    private string RoleName(ulong roleId)
+    {
+        return _workspace?.Roles.FirstOrDefault(x => x.Id == roleId)?.Nombre ?? "-";
+    }
+
+    private string EstablishmentName(ulong? establishmentId)
+    {
+        if (establishmentId is null)
+        {
+            return "-";
+        }
+
+        var local = _workspace?.Establecimientos.FirstOrDefault(x => x.Id == establishmentId);
+        return local is null ? "-" : $"{local.Codigo} - {local.Nombre}";
     }
 }

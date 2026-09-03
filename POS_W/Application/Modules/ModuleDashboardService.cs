@@ -1,12 +1,27 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using POS_W.Data;
 
 namespace POS_W.Application.Modules;
 
-public sealed class ModuleDashboardService(IServiceProvider serviceProvider, PosDatabaseSettings databaseSettings)
+public sealed class ModuleDashboardService(
+    IServiceProvider serviceProvider,
+    PosDatabaseSettings databaseSettings,
+    IMemoryCache cache)
 {
+    private static readonly MemoryCacheEntryOptions CacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(45),
+        SlidingExpiration = TimeSpan.FromSeconds(15)
+    };
+
     public async Task<ConfigurationSummary> GetConfigurationSummaryAsync()
     {
+        if (cache.TryGetValue(nameof(ConfigurationSummary), out ConfigurationSummary? cached) && cached is not null)
+        {
+            return cached;
+        }
+
         var db = CreateDbContext();
         if (db is null)
         {
@@ -15,12 +30,14 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
 
         try
         {
-            return new ConfigurationSummary(
+            var summary = new ConfigurationSummary(
                 true,
                 null,
                 await db.Empresas.CountAsync(x => x.DeletedAt == null),
                 await db.Establecimientos.CountAsync(x => x.DeletedAt == null),
                 await db.Parametros.CountAsync());
+            cache.Set(nameof(ConfigurationSummary), summary, CacheOptions);
+            return summary;
         }
         catch (Exception ex)
         {
@@ -30,6 +47,11 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
 
     public async Task<SecuritySummary> GetSecuritySummaryAsync()
     {
+        if (cache.TryGetValue(nameof(SecuritySummary), out SecuritySummary? cached) && cached is not null)
+        {
+            return cached;
+        }
+
         var db = CreateDbContext();
         if (db is null)
         {
@@ -38,7 +60,7 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
 
         try
         {
-            return new SecuritySummary(
+            var summary = new SecuritySummary(
                 true,
                 null,
                 await db.Roles.CountAsync(x => x.DeletedAt == null),
@@ -46,6 +68,8 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
                 await db.Usuarios.CountAsync(x => x.DeletedAt == null),
                 await db.Sesiones.CountAsync(x => x.Estado == "activa"),
                 await db.Turnos.CountAsync(x => x.DeletedAt == null && x.Estado != "cerrado" && x.Estado != "anulado"));
+            cache.Set(nameof(SecuritySummary), summary, CacheOptions);
+            return summary;
         }
         catch (Exception ex)
         {
@@ -55,6 +79,11 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
 
     public async Task<CatalogSummary> GetCatalogSummaryAsync()
     {
+        if (cache.TryGetValue(nameof(CatalogSummary), out CatalogSummary? cached) && cached is not null)
+        {
+            return cached;
+        }
+
         var db = CreateDbContext();
         if (db is null)
         {
@@ -63,7 +92,7 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
 
         try
         {
-            return new CatalogSummary(
+            var summary = new CatalogSummary(
                 true,
                 null,
                 await db.Categorias.CountAsync(x => x.DeletedAt == null),
@@ -71,6 +100,8 @@ public sealed class ModuleDashboardService(IServiceProvider serviceProvider, Pos
                 await db.UnidadesMedida.CountAsync(x => x.DeletedAt == null),
                 await db.Productos.CountAsync(x => x.DeletedAt == null),
                 await db.Presentaciones.CountAsync(x => x.DeletedAt == null));
+            cache.Set(nameof(CatalogSummary), summary, CacheOptions);
+            return summary;
         }
         catch (Exception ex)
         {

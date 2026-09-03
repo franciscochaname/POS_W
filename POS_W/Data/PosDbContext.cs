@@ -99,8 +99,12 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.RolId).HasColumnName("rol_id");
             entity.Property(x => x.EstablecimientoBaseId).HasColumnName("establecimiento_base_id");
             entity.Property(x => x.Username).HasColumnName("username").HasMaxLength(80);
+            entity.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
             entity.Property(x => x.Nombres).HasColumnName("nombres").HasMaxLength(120);
             entity.Property(x => x.Apellidos).HasColumnName("apellidos").HasMaxLength(120);
+            entity.Property(x => x.DocumentoTipo).HasColumnName("documento_tipo").HasMaxLength(20);
+            entity.Property(x => x.DocumentoNumero).HasColumnName("documento_numero").HasMaxLength(20);
+            entity.Property(x => x.Email).HasColumnName("email").HasMaxLength(160);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });

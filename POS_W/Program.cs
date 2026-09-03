@@ -4,6 +4,7 @@ using MudBlazor.Services;
 using POS_W.Application.Configuracion;
 using POS_W.Application.Modules;
 using POS_W.Application.Navigation;
+using POS_W.Application.Seguridad;
 using POS_W.Components;
 using POS_W.Data;
 
@@ -34,8 +35,10 @@ if (!string.IsNullOrWhiteSpace(posConnectionString))
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ConfigurationService>();
 builder.Services.AddScoped<ModuleDashboardService>();
+builder.Services.AddScoped<SecurityService>();
 builder.Services.AddSingleton<OperatorAccessService>();
 
 var app = builder.Build();
