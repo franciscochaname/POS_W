@@ -38,7 +38,7 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.DireccionFiscal).HasColumnName("direccion_fiscal").HasMaxLength(300);
             entity.Property(x => x.AmbienteSunat).HasColumnName("ambiente_sunat").HasMaxLength(20);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
-            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });
 
@@ -56,7 +56,7 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.FormatoImpresion).HasColumnName("formato_impresion").HasMaxLength(20);
             entity.Property(x => x.PermiteStockNegativo).HasColumnName("permite_stock_negativo");
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
-            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });
 
@@ -152,7 +152,7 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Modulo).HasColumnName("modulo").HasMaxLength(60);
             entity.Property(x => x.Accion).HasColumnName("accion").HasMaxLength(80);
             entity.Property(x => x.TablaAfectada).HasColumnName("tabla_afectada").HasMaxLength(80);
-            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
         });
 
         modelBuilder.Entity<PosCaja>(entity =>

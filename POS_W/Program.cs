@@ -5,6 +5,7 @@ using POS_W.Application.Caja;
 using POS_W.Application.Catalogo;
 using POS_W.Application.Clientes;
 using POS_W.Application.Configuracion;
+using POS_W.Application.Identificacion;
 using POS_W.Application.Inventario;
 using POS_W.Application.Modules;
 using POS_W.Application.Navigation;
@@ -40,6 +41,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddMemoryCache();
+builder.Services.Configure<ApiPeruOptions>(builder.Configuration.GetSection("ApiPeru"));
+builder.Services.AddHttpClient<ApiPeruIdentityService>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiPeruOptions>>().Value;
+    client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(options.BaseUrl) ? "https://api.apiperu.dev" : options.BaseUrl);
+});
 builder.Services.AddScoped<CashService>();
 builder.Services.AddScoped<CatalogService>();
 builder.Services.AddScoped<ClientService>();

@@ -1,5 +1,6 @@
 @page "/clientes"
 @inject ClientService Clients
+@inject ApiPeruIdentityService IdentityLookup
 @inject OperatorAccessService Access
 @inject ISnackbar Snackbar
 
@@ -67,6 +68,9 @@ else
                         </MudSelect>
                         <MudTextField @bind-Value="_client.DocumentoNumero" Label="Numero" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
                     </div>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Search" OnClick="LookupClientDocumentAsync" Disabled="_lookingUpClient || !CanLookupDocument">
+                        @(_lookingUpClient ? "Consultando..." : "Consultar documento")
+                    </MudButton>
                     <MudTextField @bind-Value="_client.RazonSocialNombre" Label="Nombre o razon social" Variant="Variant.Outlined" Margin="Margin.Dense" />
                     <MudTextField @bind-Value="_client.Direccion" Label="Direccion" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
                     <div class="split-fields">
@@ -118,6 +122,8 @@ else
     private ClientWorkspace? _workspace;
     private ClientForm _client = new();
     private string _search = "";
+    private bool _lookingUpClient;
+    private bool CanLookupDocument => _client.DocumentoTipo is "DNI" or "RUC";
 
     private IEnumerable<ClientItem> FilteredClients
     {
@@ -159,6 +165,33 @@ else
             _client = new();
             await LoadAsync();
         }
+    }
+
+    private async Task LookupClientDocumentAsync()
+    {
+        if (!CanLookupDocument)
+        {
+            Snackbar.Add("La consulta automatica esta disponible para DNI y RUC.", Severity.Info);
+            return;
+        }
+
+        _lookingUpClient = true;
+        var result = _client.DocumentoTipo == "RUC"
+            ? await IdentityLookup.LookupRucAsync(_client.DocumentoNumero)
+            : await IdentityLookup.LookupDniAsync(_client.DocumentoNumero);
+        _lookingUpClient = false;
+
+        if (!result.Success || result.Data is null)
+        {
+            Snackbar.Add(result.Message, Severity.Warning);
+            return;
+        }
+
+        _client.DocumentoTipo = result.Data.DocumentType;
+        _client.DocumentoNumero = result.Data.DocumentNumber;
+        _client.RazonSocialNombre = result.Data.FullName;
+        _client.Direccion = result.Data.Address;
+        Snackbar.Add("Datos cargados desde API Peru.", Severity.Success);
     }
 
     private static string Display(string? value)

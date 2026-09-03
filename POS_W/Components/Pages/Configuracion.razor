@@ -1,5 +1,6 @@
 @page "/configuracion"
 @inject ConfigurationService Configuration
+@inject ApiPeruIdentityService IdentityLookup
 @inject ISnackbar Snackbar
 
 <PageTitle>Configuracion - POS</PageTitle>
@@ -54,7 +55,12 @@ else
                     <MudItem xs="12" lg="4">
                         <MudPaper Class="form-panel" Elevation="0">
                             <h2>Registrar empresa</h2>
-                            <MudTextField @bind-Value="_empresa.Ruc" Label="RUC" MaxLength="11" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <div class="action-row align-end">
+                                <MudTextField @bind-Value="_empresa.Ruc" Label="RUC" MaxLength="11" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-field" />
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Search" OnClick="LookupEmpresaRucAsync" Disabled="_lookingUpEmpresa">
+                                    Consultar
+                                </MudButton>
+                            </div>
                             <MudTextField @bind-Value="_empresa.RazonSocial" Label="Razon social" Variant="Variant.Outlined" Margin="Margin.Dense" />
                             <MudTextField @bind-Value="_empresa.NombreComercial" Label="Nombre comercial" Variant="Variant.Outlined" Margin="Margin.Dense" />
                             <MudTextField @bind-Value="_empresa.DireccionFiscal" Label="Direccion fiscal" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
@@ -201,6 +207,7 @@ else
     private EmpresaForm _empresa = new();
     private EstablecimientoForm _establecimiento = new();
     private ParametroForm _parametro = new();
+    private bool _lookingUpEmpresa;
 
     protected override async Task OnInitializedAsync()
     {
@@ -230,6 +237,25 @@ else
             _empresa = new();
             await LoadAsync();
         }
+    }
+
+    private async Task LookupEmpresaRucAsync()
+    {
+        _lookingUpEmpresa = true;
+        var result = await IdentityLookup.LookupRucAsync(_empresa.Ruc);
+        _lookingUpEmpresa = false;
+
+        if (!result.Success || result.Data is null)
+        {
+            Snackbar.Add(result.Message, Severity.Warning);
+            return;
+        }
+
+        _empresa.Ruc = result.Data.DocumentNumber;
+        _empresa.RazonSocial = result.Data.FullName;
+        _empresa.NombreComercial = result.Data.FullName;
+        _empresa.DireccionFiscal = result.Data.Address ?? "";
+        Snackbar.Add("Datos RUC cargados desde API Peru.", Severity.Success);
     }
 
     private async Task SaveEstablecimientoAsync()

@@ -279,6 +279,15 @@ a {
     justify-content: flex-end;
 }
 
+.action-row.align-end {
+    align-items: flex-end;
+    flex-wrap: nowrap;
+}
+
+.flex-field {
+    flex: 1 1 auto;
+}
+
 .access-denied {
     align-items: flex-start;
     display: flex;
@@ -366,5 +375,13 @@ a {
 
     .split-fields {
         grid-template-columns: 1fr;
+    }
+
+    .action-row.align-end {
+        flex-wrap: wrap;
+    }
+
+    .flex-field {
+        flex-basis: 100%;
     }
 }
