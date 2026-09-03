@@ -49,8 +49,16 @@ public sealed class SecTurno
     public ulong Id { get; set; }
     public ulong UsuarioId { get; set; }
     public ulong EstablecimientoId { get; set; }
+    public ulong? CajaId { get; set; }
+    public ulong? IslaId { get; set; }
     public DateOnly Fecha { get; set; }
+    public DateTime? InicioAt { get; set; }
+    public DateTime? FinAt { get; set; }
     public string Estado { get; set; } = "programado";
+    public decimal SaldoInicial { get; set; }
+    public decimal? SaldoFinal { get; set; }
+    public decimal? DiferenciaCaja { get; set; }
+    public string? Observacion { get; set; }
     public DateTime? DeletedAt { get; set; }
 }
 

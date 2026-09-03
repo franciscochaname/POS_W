@@ -1,4 +1,7 @@
 @page "/"
+@inject ModuleDashboardService Modules
+@inject InventoryService Inventory
+@inject OperatorAccessService Access
 
 <PageTitle>Dashboard - POS</PageTitle>
 
@@ -6,86 +9,118 @@
     <div>
         <span class="eyebrow">Operacion diaria</span>
         <h1>Dashboard</h1>
-        <p>Resumen inicial para ventas, combustible, caja e inventario.</p>
+        <p>Resumen real de los modulos disponibles en la base local.</p>
     </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PointOfSale">
+    <MudButton Href="/pos" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.PointOfSale">
         Abrir POS
     </MudButton>
 </section>
 
-<MudGrid Spacing="3">
-    <MudItem xs="12" sm="6" lg="3">
-        <MudPaper Class="metric-card" Elevation="0">
-            <MudIcon Icon="@Icons.Material.Rounded.Payments" Color="Color.Primary" />
-            <span>Ventas del dia</span>
-            <strong>S/ 0.00</strong>
-            <small>Pendiente de datos reales</small>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <MudPaper Class="metric-card" Elevation="0">
-            <MudIcon Icon="@Icons.Material.Rounded.LocalGasStation" Color="Color.Tertiary" />
-            <span>Combustible</span>
-            <strong>0.0000 gal</strong>
-            <small>Despachos registrados hoy</small>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <MudPaper Class="metric-card" Elevation="0">
-            <MudIcon Icon="@Icons.Material.Rounded.Inventory2" Color="Color.Secondary" />
-            <span>Stock bajo</span>
-            <strong>0</strong>
-            <small>Productos por reponer</small>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <MudPaper Class="metric-card" Elevation="0">
-            <MudIcon Icon="@Icons.Material.Rounded.ReceiptLong" Color="Color.Success" />
-            <span>Comprobantes</span>
-            <strong>0</strong>
-            <small>Pendientes de SUNAT</small>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+@if (_configuration is null || _security is null || _catalog is null || _inventory is null)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <DatabaseNotice IsConfigured="_configuration.DatabaseConfigured" Message="@FirstStatusMessage()" />
 
-<MudGrid Spacing="3" Class="mt-1">
-    <MudItem xs="12" lg="7">
-        <MudPaper Class="work-panel" Elevation="0">
-            <div class="panel-title">
-                <div>
-                    <h2>Flujo POS prioritario</h2>
-                    <p>Primera ruta de construccion por modulo.</p>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.Storefront" Color="Color.Primary" />
+                <span>Establecimientos</span>
+                <strong>@_configuration.Establecimientos</strong>
+                <small>@_configuration.Empresas empresas activas</small>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.Inventory2" Color="Color.Secondary" />
+                <span>Productos</span>
+                <strong>@_catalog.Productos</strong>
+                <small>@_catalog.Presentaciones presentaciones</small>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.WarningAmber" Color="Color.Warning" />
+                <span>Stock bajo</span>
+                <strong>@_inventory.Saldos.Count(x => x.BajoMinimo)</strong>
+                <small>@_inventory.Saldos.Count saldos con kardex</small>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="metric-card compact" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Rounded.AdminPanelSettings" Color="Color.Success" />
+                <span>Usuarios</span>
+                <strong>@_security.Usuarios</strong>
+                <small>@_security.TurnosAbiertos turnos abiertos</small>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="3" Class="mt-1">
+        <MudItem xs="12" lg="7">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Modulos disponibles</h2>
+                        <p>La visibilidad sale del rol operativo actual.</p>
+                    </div>
+                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">@Access.GetVisibleModules().Count</MudChip>
                 </div>
-                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">Fase 1</MudChip>
-            </div>
-            <MudList T="string" Dense="true">
-                <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">Layout principal con barra lateral y libreria visual.</MudListItem>
-                <MudListItem Icon="@Icons.Material.Rounded.RadioButtonUnchecked">Conexion EF Core a MySQL POS.</MudListItem>
-                <MudListItem Icon="@Icons.Material.Rounded.RadioButtonUnchecked">Configuracion, seguridad y catalogo base.</MudListItem>
-                <MudListItem Icon="@Icons.Material.Rounded.RadioButtonUnchecked">Venta transaccional: detalle, kardex, caja y comprobante.</MudListItem>
-            </MudList>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" lg="5">
-        <MudPaper Class="work-panel" Elevation="0">
-            <div class="panel-title">
-                <div>
-                    <h2>Estado tecnico</h2>
-                    <p>Base para que el equipo avance sin desviarse.</p>
+                <div class="chip-list">
+                    @foreach (var module in Access.GetVisibleModules())
+                    {
+                        <MudChip T="string" Icon="@module.Icon" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@module.Title</MudChip>
+                    }
                 </div>
-            </div>
-            <div class="status-row">
-                <span>Stack</span>
-                <strong>C# + Blazor + MudBlazor</strong>
-            </div>
-            <div class="status-row">
-                <span>Base de datos</span>
-                <strong>MySQL / POS</strong>
-            </div>
-            <div class="status-row">
-                <span>Migracion inicial</span>
-                <strong>35 tablas, 82 FK</strong>
-            </div>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" lg="5">
+            <MudPaper Class="work-panel" Elevation="0">
+                <div class="panel-title">
+                    <div>
+                        <h2>Base operativa</h2>
+                        <p>Conteos leidos desde MySQL y cacheados en memoria.</p>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <span>Parametros</span>
+                    <strong>@_configuration.Parametros</strong>
+                </div>
+                <div class="status-row">
+                    <span>Roles / permisos</span>
+                    <strong>@_security.Roles / @_security.Permisos</strong>
+                </div>
+                <div class="status-row">
+                    <span>Categorias / marcas / unidades</span>
+                    <strong>@_catalog.Categorias / @_catalog.Marcas / @_catalog.Unidades</strong>
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private ConfigurationSummary? _configuration;
+    private SecuritySummary? _security;
+    private CatalogSummary? _catalog;
+    private InventoryWorkspace? _inventory;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _configuration = await Modules.GetConfigurationSummaryAsync();
+        _security = await Modules.GetSecuritySummaryAsync();
+        _catalog = await Modules.GetCatalogSummaryAsync();
+        _inventory = await Inventory.GetWorkspaceAsync();
+    }
+
+    private string? FirstStatusMessage()
+    {
+        return _configuration?.StatusMessage
+            ?? _security?.StatusMessage
+            ?? _catalog?.StatusMessage
+            ?? _inventory?.StatusMessage;
+    }
+}

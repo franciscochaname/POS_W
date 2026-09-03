@@ -1,4 +1,5 @@
 @page "/caja"
+@inject CashService Cash
 @inject OperatorAccessService Access
 
 <PageTitle>Caja y arqueo - POS</PageTitle>
@@ -15,90 +16,126 @@ else
             <h1>Control de caja</h1>
             <p>Apertura, ingresos, egresos, retiros, arqueo y cierre por turno.</p>
         </div>
-        <div class="action-row">
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Calculate">Arqueo</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.LockOpen">Abrir caja</MudButton>
-        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadAsync">
+            Actualizar
+        </MudButton>
     </section>
 
-    <MudGrid Spacing="3">
-        <MudItem xs="12" md="4">
-            <MudPaper Class="metric-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Rounded.AccountBalanceWallet" Color="Color.Primary" />
-                <span>Saldo inicial</span>
-                <strong>S/ 0.00</strong>
-                <small>Asociado al turno activo</small>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudPaper Class="metric-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Rounded.Payments" Color="Color.Success" />
-                <span>Efectivo esperado</span>
-                <strong>S/ 0.00</strong>
-                <small>Ventas + ingresos - retiros</small>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" md="4">
-            <MudPaper Class="metric-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Rounded.Warning" Color="Color.Warning" />
-                <span>Diferencia</span>
-                <strong>S/ 0.00</strong>
-                <small>Resultado de arqueo</small>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+    @if (_workspace is null)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <DatabaseNotice IsConfigured="_workspace.DatabaseConfigured" Message="@_workspace.StatusMessage" />
 
-    <MudGrid Spacing="3" Class="mt-1">
-        <MudItem xs="12" lg="7">
-            <MudPaper Class="work-panel" Elevation="0">
-                <div class="panel-title">
-                    <div>
-                        <h2>Movimientos del turno</h2>
-                        <p>Los cajeros y griferos trabajan aqui con su caja o isla asignada.</p>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="4">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.AccountBalanceWallet" Color="Color.Primary" />
+                    <span>Saldo inicial</span>
+                    <strong>@(HasActiveShift ? Money(_workspace.SaldoInicial) : "-")</strong>
+                    <small>@ActiveShiftText()</small>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Payments" Color="Color.Success" />
+                    <span>Efectivo esperado</span>
+                    <strong>@(HasActiveShift ? Money(_workspace.EfectivoEsperado) : "-")</strong>
+                    <small>Calculado desde movimientos reales</small>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Warning" Color="@(_workspace.Diferencia is null ? Color.Default : Color.Warning)" />
+                    <span>Diferencia</span>
+                    <strong>@(!HasActiveShift || _workspace.Diferencia is null ? "-" : Money(_workspace.Diferencia.Value))</strong>
+                    <small>Ultimo arqueo registrado</small>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Spacing="3" Class="mt-1">
+            <MudItem xs="12" lg="7">
+                <MudPaper Class="work-panel" Elevation="0">
+                    <div class="panel-title">
+                        <div>
+                            <h2>Movimientos del turno</h2>
+                            <p>Datos reales de `pos_movimientos_caja`.</p>
+                        </div>
+                        <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">@_workspace.Movimientos.Count</MudChip>
                     </div>
-                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">pos_movimientos_caja</MudChip>
-                </div>
-                <MudTable Items="_movements" Dense="true" Hover="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>Tipo</MudTh>
-                        <MudTh>Concepto</MudTh>
-                        <MudTh>Medio</MudTh>
-                        <MudTh Class="text-right">Monto</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Tipo">@context.Type</MudTd>
-                        <MudTd DataLabel="Concepto">@context.Concept</MudTd>
-                        <MudTd DataLabel="Medio">@context.Method</MudTd>
-                        <MudTd DataLabel="Monto" Class="text-right">@context.Amount</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" lg="5">
-            <MudPaper Class="work-panel" Elevation="0">
-                <div class="panel-title">
-                    <div>
-                        <h2>Limites por rol</h2>
-                        <p>Acciones disponibles para perfiles operativos.</p>
+                    <MudTable Items="_workspace.Movimientos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                        <HeaderContent>
+                            <MudTh>Fecha</MudTh>
+                            <MudTh>Tipo</MudTh>
+                            <MudTh>Concepto</MudTh>
+                            <MudTh>Medio</MudTh>
+                            <MudTh Class="text-right">Monto</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Fecha">@context.CreatedAt.ToString("dd/MM HH:mm")</MudTd>
+                            <MudTd DataLabel="Tipo">@context.Tipo</MudTd>
+                            <MudTd DataLabel="Concepto">@context.Concepto</MudTd>
+                            <MudTd DataLabel="Medio">@context.MedioPago</MudTd>
+                            <MudTd DataLabel="Monto" Class="text-right">@Money(context.Monto)</MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary">No hay movimientos de caja registrados.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" lg="5">
+                <MudPaper Class="work-panel" Elevation="0">
+                    <div class="panel-title">
+                        <div>
+                            <h2>Cajas y turnos</h2>
+                            <p>Estado operativo leído desde la base local.</p>
+                        </div>
                     </div>
-                </div>
-                <MudList T="string" Dense="true">
-                    <MudListItem Icon="@Icons.Material.Rounded.PointOfSale">Cajero: POS, clientes, comprobantes y caja.</MudListItem>
-                    <MudListItem Icon="@Icons.Material.Rounded.LocalGasStation">Grifero: combustible, lecturas, despachos y caja asignada.</MudListItem>
-                    <MudListItem Icon="@Icons.Material.Rounded.Lock">Anulaciones, descuentos altos y cierres requieren autorizacion.</MudListItem>
-                </MudList>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+                    <div class="status-row">
+                        <span>Cajas registradas</span>
+                        <strong>@_workspace.Cajas.Count</strong>
+                    </div>
+                    <div class="status-row">
+                        <span>Turnos abiertos</span>
+                        <strong>@_workspace.Turnos.Count</strong>
+                    </div>
+                    <div class="status-row">
+                        <span>Usuarios vinculables</span>
+                        <strong>@_workspace.Usuarios.Count</strong>
+                    </div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
 }
 
 @code {
-    private readonly CashMovement[] _movements =
-    [
-        new("Apertura", "Saldo inicial del turno", "Efectivo", "S/ 0.00"),
-        new("Venta", "Venta minimarket o combustible", "Mixto", "S/ 0.00"),
-        new("Arqueo", "Conteo al cierre", "Efectivo", "S/ 0.00")
-    ];
+    private readonly System.Globalization.CultureInfo _culture = new("es-PE");
+    private CashWorkspace? _workspace;
+    private bool HasActiveShift => _workspace?.Turnos.Count > 0;
 
-    private sealed record CashMovement(string Type, string Concept, string Method, string Amount);
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _workspace = await Cash.GetWorkspaceAsync();
+    }
+
+    private string ActiveShiftText()
+    {
+        var shift = _workspace?.Turnos.FirstOrDefault();
+        return shift is null ? "Sin turno abierto" : $"Turno {shift.Id} / {shift.Estado}";
+    }
+
+    private string Money(decimal value)
+    {
+        return value.ToString("C2", _culture);
+    }
 }

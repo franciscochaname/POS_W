@@ -14,6 +14,8 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
     public DbSet<SecSesion> Sesiones => Set<SecSesion>();
     public DbSet<SecTurno> Turnos => Set<SecTurno>();
     public DbSet<SecAuditoria> Auditorias => Set<SecAuditoria>();
+    public DbSet<PosCaja> Cajas => Set<PosCaja>();
+    public DbSet<PosMovimientoCaja> MovimientosCaja => Set<PosMovimientoCaja>();
     public DbSet<CatCategoria> Categorias => Set<CatCategoria>();
     public DbSet<CatMarca> Marcas => Set<CatMarca>();
     public DbSet<CatUnidadMedida> UnidadesMedida => Set<CatUnidadMedida>();
@@ -128,8 +130,16 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.UsuarioId).HasColumnName("usuario_id");
             entity.Property(x => x.EstablecimientoId).HasColumnName("establecimiento_id");
+            entity.Property(x => x.CajaId).HasColumnName("caja_id");
+            entity.Property(x => x.IslaId).HasColumnName("isla_id");
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(30);
             entity.Property(x => x.Fecha).HasColumnName("fecha");
+            entity.Property(x => x.InicioAt).HasColumnName("inicio_at");
+            entity.Property(x => x.FinAt).HasColumnName("fin_at");
+            entity.Property(x => x.SaldoInicial).HasColumnName("saldo_inicial").HasPrecision(12, 2);
+            entity.Property(x => x.SaldoFinal).HasColumnName("saldo_final").HasPrecision(12, 2);
+            entity.Property(x => x.DiferenciaCaja).HasColumnName("diferencia_caja").HasPrecision(12, 2);
+            entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });
 
@@ -142,6 +152,40 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Accion).HasColumnName("accion").HasMaxLength(80);
             entity.Property(x => x.TablaAfectada).HasColumnName("tabla_afectada").HasMaxLength(80);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<PosCaja>(entity =>
+        {
+            entity.ToTable("pos_cajas");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.EstablecimientoId).HasColumnName("establecimiento_id");
+            entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(30);
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(120);
+            entity.Property(x => x.Ubicacion).HasColumnName("ubicacion").HasMaxLength(160);
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        });
+
+        modelBuilder.Entity<PosMovimientoCaja>(entity =>
+        {
+            entity.ToTable("pos_movimientos_caja");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.CajaId).HasColumnName("caja_id");
+            entity.Property(x => x.TurnoId).HasColumnName("turno_id");
+            entity.Property(x => x.UsuarioId).HasColumnName("usuario_id");
+            entity.Property(x => x.VentaId).HasColumnName("venta_id");
+            entity.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(20);
+            entity.Property(x => x.Concepto).HasColumnName("concepto").HasMaxLength(160);
+            entity.Property(x => x.MedioPago).HasColumnName("medio_pago").HasMaxLength(20);
+            entity.Property(x => x.Monto).HasColumnName("monto").HasPrecision(12, 2);
+            entity.Property(x => x.EfectivoEsperado).HasColumnName("efectivo_esperado").HasPrecision(12, 2);
+            entity.Property(x => x.EfectivoContado).HasColumnName("efectivo_contado").HasPrecision(12, 2);
+            entity.Property(x => x.Diferencia).HasColumnName("diferencia").HasPrecision(12, 2);
+            entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });
 
         modelBuilder.Entity<CatCategoria>(entity =>
