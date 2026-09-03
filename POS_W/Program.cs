@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using POS_W.Application.Catalogo;
 using POS_W.Application.Configuracion;
 using POS_W.Application.Modules;
 using POS_W.Application.Navigation;
@@ -36,6 +37,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<CatalogService>();
 builder.Services.AddScoped<ConfigurationService>();
 builder.Services.AddScoped<ModuleDashboardService>();
 builder.Services.AddScoped<SecurityService>();

@@ -1,97 +1,409 @@
 @page "/catalogo"
-@inject ModuleDashboardService Modules
+@inject CatalogService Catalog
+@inject OperatorAccessService Access
+@inject ISnackbar Snackbar
 
 <PageTitle>Catalogo - POS</PageTitle>
 
-<section class="page-heading">
-    <div>
-        <span class="eyebrow">Productos y precios</span>
-        <h1>Catalogo</h1>
-        <p>Unidades base, presentaciones, conversiones, productos, precios e historial.</p>
-    </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.AddBox">
-        Nuevo producto
-    </MudButton>
-</section>
-
-@if (_summary is null)
+@if (!Access.CanAccess("catalogo", Access.CurrentOperator.Role))
 {
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    <AccessDenied ModuleName="Catalogo" />
 }
 else
 {
-    <DatabaseNotice IsConfigured="_summary.DatabaseConfigured" Message="@_summary.StatusMessage" />
-
-    <MudGrid Spacing="3">
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Categorias</span>
-                <strong>@_summary.Categorias</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Marcas</span>
-                <strong>@_summary.Marcas</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="2">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Unidades</span>
-                <strong>@_summary.Unidades</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="3">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Productos</span>
-                <strong>@_summary.Productos</strong>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="3">
-            <MudPaper Class="metric-card compact" Elevation="0">
-                <span>Presentaciones</span>
-                <strong>@_summary.Presentaciones</strong>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-
-    <MudPaper Class="work-panel mt-1" Elevation="0">
-        <div class="panel-title">
-            <div>
-                <h2>Regla critica de inventario</h2>
-                <p>El sistema vende por presentacion, pero descuenta y reconstruye stock en unidad base.</p>
-            </div>
-            <MudChip T="string" Color="Color.Warning" Variant="Variant.Outlined" Size="Size.Small">DECIMAL(10,4)</MudChip>
+    <section class="page-heading">
+        <div>
+            <span class="eyebrow">Productos y precios</span>
+            <h1>Catalogo</h1>
+            <p>Productos, unidades base, presentaciones y equivalencias para inventario exacto.</p>
         </div>
-        <MudTable Items="_examples" Dense="true" Hover="true" Elevation="0">
-            <HeaderContent>
-                <MudTh>Presentacion</MudTh>
-                <MudTh>Factor unidad base</MudTh>
-                <MudTh>Uso</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Presentacion">@context.Name</MudTd>
-                <MudTd DataLabel="Factor">@context.Factor</MudTd>
-                <MudTd DataLabel="Uso">@context.Use</MudTd>
-            </RowTemplate>
-        </MudTable>
-    </MudPaper>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadAsync">
+            Actualizar
+        </MudButton>
+    </section>
+
+    @if (_workspace is null)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <DatabaseNotice IsConfigured="_workspace.DatabaseConfigured" Message="@_workspace.StatusMessage" />
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Category" Color="Color.Primary" />
+                    <span>Categorias</span>
+                    <strong>@_workspace.Categorias.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Bookmarks" Color="Color.Secondary" />
+                    <span>Marcas</span>
+                    <strong>@_workspace.Marcas.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="2">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Straighten" Color="Color.Tertiary" />
+                    <span>Unidades</span>
+                    <strong>@_workspace.Unidades.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.Inventory2" Color="Color.Info" />
+                    <span>Productos</span>
+                    <strong>@_workspace.Productos.Count</strong>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Class="metric-card compact" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Rounded.QrCodeScanner" Color="Color.Warning" />
+                    <span>Presentaciones</span>
+                    <strong>@_workspace.Presentaciones.Count</strong>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="work-panel mt-1" Elevation="0">
+            <MudTabs Rounded="true" Class="config-tabs">
+                <MudTabPanel Text="Productos" Icon="@Icons.Material.Rounded.Inventory2">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Registrar producto</h2>
+                                <div class="split-fields">
+                                    <MudTextField @bind-Value="_producto.CodigoInterno" Label="Codigo interno" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    <MudSelect T="string" @bind-Value="_producto.TipoProducto" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                        <MudSelectItem T="string" Value="@("minimarket")">Minimarket</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("combustible")">Combustible</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("servicio")">Servicio</MudSelectItem>
+                                    </MudSelect>
+                                </div>
+                                <MudTextField @bind-Value="_producto.Nombre" Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudSelect T="ulong" @bind-Value="_producto.UnidadBaseId" Label="Unidad base" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var unit in _workspace.Unidades)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@unit.Id">@unit.Codigo - @unit.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <div class="split-fields">
+                                    <MudSelect T="ulong?" @bind-Value="_producto.CategoriaId" Label="Categoria" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                        @foreach (var category in _workspace.Categorias)
+                                        {
+                                            <MudSelectItem T="ulong?" Value="@((ulong?)category.Id)">@category.Nombre</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                    <MudSelect T="ulong?" @bind-Value="_producto.MarcaId" Label="Marca" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                        @foreach (var brand in _workspace.Marcas)
+                                        {
+                                            <MudSelectItem T="ulong?" Value="@((ulong?)brand.Id)">@brand.Nombre</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </div>
+                                <div class="split-fields">
+                                    <MudNumericField T="decimal" @bind-Value="_producto.StockMinimo" Label="Stock minimo" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N4" />
+                                    <MudNumericField T="decimal" @bind-Value="_producto.CostoPromedio" Label="Costo" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N4" />
+                                </div>
+                                <MudNumericField T="decimal" @bind-Value="_producto.PrecioVenta" Label="Precio venta" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N2" />
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SaveProductAsync">
+                                    Guardar producto
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Productos" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Codigo</MudTh>
+                                    <MudTh>Producto</MudTh>
+                                    <MudTh>Tipo</MudTh>
+                                    <MudTh>Unidad base</MudTh>
+                                    <MudTh Class="text-right">Precio</MudTh>
+                                    <MudTh>Estado</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Codigo">@context.CodigoInterno</MudTd>
+                                    <MudTd DataLabel="Producto">
+                                        <strong>@context.Nombre</strong>
+                                        <small>@CategoryName(context.CategoriaId) / @BrandName(context.MarcaId)</small>
+                                    </MudTd>
+                                    <MudTd DataLabel="Tipo">@context.TipoProducto</MudTd>
+                                    <MudTd DataLabel="Unidad base">@UnitName(context.UnidadBaseId)</MudTd>
+                                    <MudTd DataLabel="Precio" Class="text-right">@context.PrecioVenta.ToString("C2", _culture)</MudTd>
+                                    <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@context.Estado</MudChip></MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText Color="Color.Secondary">Registra unidades base antes de crear productos.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Presentaciones" Icon="@Icons.Material.Rounded.QrCodeScanner">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" lg="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Registrar presentacion</h2>
+                                <MudSelect T="ulong" @bind-Value="_presentacion.ProductoId" Label="Producto" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var product in _workspace.Productos)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@product.Id">@product.CodigoInterno - @product.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudSelect T="ulong" @bind-Value="_presentacion.UnidadMedidaId" Label="Unidad de venta" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var unit in _workspace.Unidades)
+                                    {
+                                        <MudSelectItem T="ulong" Value="@unit.Id">@unit.Codigo - @unit.Nombre</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudTextField @bind-Value="_presentacion.Nombre" Label="Nombre de presentacion" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="split-fields">
+                                    <MudNumericField T="decimal" @bind-Value="_presentacion.FactorUnidadBase" Label="Factor base" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0.0001m" Format="N4" />
+                                    <MudNumericField T="decimal" @bind-Value="_presentacion.PrecioVenta" Label="Precio" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N2" />
+                                </div>
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+                                    El factor siempre expresa cuantas unidades base descuenta una venta.
+                                </MudAlert>
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Save" OnClick="SavePresentationAsync">
+                                    Guardar presentacion
+                                </MudButton>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" lg="8">
+                            <MudTable Items="_workspace.Presentaciones" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                <HeaderContent>
+                                    <MudTh>Producto</MudTh>
+                                    <MudTh>Presentacion</MudTh>
+                                    <MudTh>Unidad venta</MudTh>
+                                    <MudTh Class="text-right">Factor</MudTh>
+                                    <MudTh Class="text-right">Precio</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Producto">@ProductName(context.ProductoId)</MudTd>
+                                    <MudTd DataLabel="Presentacion">@context.Nombre</MudTd>
+                                    <MudTd DataLabel="Unidad venta">@UnitName(context.UnidadMedidaId)</MudTd>
+                                    <MudTd DataLabel="Factor" Class="text-right">@context.FactorUnidadBase.ToString("N4")</MudTd>
+                                    <MudTd DataLabel="Precio" Class="text-right">@context.PrecioVenta.ToString("C2", _culture)</MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText Color="Color.Secondary">Cada producto nuevo crea automaticamente su presentacion base.</MudText>
+                                </NoRecordsContent>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Maestros" Icon="@Icons.Material.Rounded.Tune">
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" md="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Categorias</h2>
+                                <MudTextField @bind-Value="_categoria.Nombre" Label="Nueva categoria" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" OnClick="SaveCategoryAsync">
+                                    Agregar
+                                </MudButton>
+                                <div class="chip-list">
+                                    @foreach (var category in _workspace.Categorias)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@category.Nombre</MudChip>
+                                    }
+                                </div>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Marcas</h2>
+                                <MudTextField @bind-Value="_marca.Nombre" Label="Nueva marca" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" OnClick="SaveBrandAsync">
+                                    Agregar
+                                </MudButton>
+                                <div class="chip-list">
+                                    @foreach (var brand in _workspace.Marcas)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@brand.Nombre</MudChip>
+                                    }
+                                </div>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudPaper Class="form-panel" Elevation="0">
+                                <h2>Unidades</h2>
+                                <div class="split-fields">
+                                    <MudTextField @bind-Value="_unidad.Codigo" Label="Codigo" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    <MudSelect T="string" @bind-Value="_unidad.Tipo" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                        <MudSelectItem T="string" Value="@("unidad")">Unidad</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("volumen")">Volumen</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("peso")">Peso</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("paquete")">Paquete</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("caja")">Caja</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("otro")">Otro</MudSelectItem>
+                                    </MudSelect>
+                                </div>
+                                <MudTextField @bind-Value="_unidad.Nombre" Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" OnClick="SaveUnitAsync">
+                                    Agregar
+                                </MudButton>
+                                <MudTable Items="_workspace.Unidades" Dense="true" Hover="true" Elevation="0" Class="data-table">
+                                    <HeaderContent>
+                                        <MudTh>Codigo</MudTh>
+                                        <MudTh>Nombre</MudTh>
+                                        <MudTh>Tipo</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
+                                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                                        <MudTd DataLabel="Tipo">@context.Tipo</MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Conversiones" Icon="@Icons.Material.Rounded.Schema">
+                    <MudGrid Spacing="3">
+                        @foreach (var product in _workspace.Productos)
+                        {
+                            var presentations = _workspace.Presentaciones.Where(x => x.ProductoId == product.Id).ToList();
+                            <MudItem xs="12" md="6" xl="4">
+                                <MudPaper Class="work-panel soft" Elevation="0">
+                                    <div class="panel-title">
+                                        <div>
+                                            <h2>@product.Nombre</h2>
+                                            <p>@product.CodigoInterno / unidad base: @UnitName(product.UnidadBaseId)</p>
+                                        </div>
+                                        <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small">@product.TipoProducto</MudChip>
+                                    </div>
+                                    <MudList T="string" Dense="true">
+                                        @foreach (var presentation in presentations)
+                                        {
+                                            <MudListItem Icon="@Icons.Material.Rounded.CheckCircle">
+                                                @presentation.Nombre: @presentation.FactorUnidadBase.ToString("N4") x @UnitName(product.UnidadBaseId)
+                                            </MudListItem>
+                                        }
+                                    </MudList>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+    }
 }
 
 @code {
-    private CatalogSummary? _summary;
-
-    private readonly PresentationExample[] _examples =
-    [
-        new("Unidad", "1.0000", "Venta individual y unidad base"),
-        new("Paquete", "6.0000", "Venta por pack sin duplicar producto"),
-        new("Caja", "24.0000", "Compra o venta mayorista")
-    ];
+    private readonly System.Globalization.CultureInfo _culture = new("es-PE");
+    private CatalogWorkspace? _workspace;
+    private ProductForm _producto = new();
+    private PresentationForm _presentacion = new();
+    private SimpleCatalogForm _categoria = new();
+    private SimpleCatalogForm _marca = new();
+    private UnitForm _unidad = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _summary = await Modules.GetCatalogSummaryAsync();
+        await LoadAsync();
     }
 
-    private sealed record PresentationExample(string Name, string Factor, string Use);
+    private async Task LoadAsync()
+    {
+        _workspace = await Catalog.GetWorkspaceAsync();
+        if (_workspace.Unidades.Count == 1 && _producto.UnidadBaseId == 0)
+        {
+            _producto.UnidadBaseId = _workspace.Unidades[0].Id;
+            _presentacion.UnidadMedidaId = _workspace.Unidades[0].Id;
+        }
+
+        if (_workspace.Productos.Count == 1 && _presentacion.ProductoId == 0)
+        {
+            _presentacion.ProductoId = _workspace.Productos[0].Id;
+            _presentacion.PrecioVenta = _workspace.Productos[0].PrecioVenta;
+        }
+    }
+
+    private async Task SaveProductAsync()
+    {
+        var result = await Catalog.CreateProductAsync(_producto);
+        Notify(result);
+        if (result.Success)
+        {
+            _producto = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SavePresentationAsync()
+    {
+        var result = await Catalog.CreatePresentationAsync(_presentacion);
+        Notify(result);
+        if (result.Success)
+        {
+            _presentacion = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveCategoryAsync()
+    {
+        var result = await Catalog.CreateCategoryAsync(_categoria);
+        Notify(result);
+        if (result.Success)
+        {
+            _categoria = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveBrandAsync()
+    {
+        var result = await Catalog.CreateBrandAsync(_marca);
+        Notify(result);
+        if (result.Success)
+        {
+            _marca = new();
+            await LoadAsync();
+        }
+    }
+
+    private async Task SaveUnitAsync()
+    {
+        var result = await Catalog.CreateUnitAsync(_unidad);
+        Notify(result);
+        if (result.Success)
+        {
+            _unidad = new();
+            await LoadAsync();
+        }
+    }
+
+    private void Notify(CatalogOperationResult result)
+    {
+        Snackbar.Add(result.Message, result.Success ? Severity.Success : Severity.Warning);
+    }
+
+    private string ProductName(ulong productId)
+    {
+        return _workspace?.Productos.FirstOrDefault(x => x.Id == productId)?.Nombre ?? "-";
+    }
+
+    private string UnitName(ulong unitId)
+    {
+        var unit = _workspace?.Unidades.FirstOrDefault(x => x.Id == unitId);
+        return unit is null ? "-" : $"{unit.Codigo} - {unit.Nombre}";
+    }
+
+    private string CategoryName(ulong? categoryId)
+    {
+        return categoryId is null ? "Sin categoria" : _workspace?.Categorias.FirstOrDefault(x => x.Id == categoryId)?.Nombre ?? "Sin categoria";
+    }
+
+    private string BrandName(ulong? brandId)
+    {
+        return brandId is null ? "Sin marca" : _workspace?.Marcas.FirstOrDefault(x => x.Id == brandId)?.Nombre ?? "Sin marca";
+    }
 }
