@@ -182,42 +182,28 @@ else
                     </MudTable>
                 </MudTabPanel>
 
-                <MudTabPanel Text="Flujo operativo" Icon="@Icons.Material.Rounded.Route">
+                <MudTabPanel Text="Acceso por rol" Icon="@Icons.Material.Rounded.Route">
                     <MudGrid Spacing="3">
-                        <MudItem xs="12" md="6">
-                            <MudPaper Class="work-panel soft" Elevation="0">
-                                <div class="panel-title">
-                                    <div>
-                                        <h2>Cajero</h2>
-                                        <p>Acceso limitado a caja, venta y documentos generados por su operacion.</p>
+                        @foreach (var rol in _workspace.Roles)
+                        {
+                            <MudItem xs="12" md="6" xl="4">
+                                <MudPaper Class="work-panel soft" Elevation="0">
+                                    <div class="panel-title">
+                                        <div>
+                                            <h2>@rol.Nombre</h2>
+                                            <p>@(rol.Descripcion ?? "Sin descripcion registrada")</p>
+                                        </div>
+                                        <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">@rol.NivelAutorizacion</MudChip>
                                     </div>
-                                    <MudIcon Icon="@Icons.Material.Rounded.PointOfSale" Color="Color.Primary" />
-                                </div>
-                                <div class="chip-list">
-                                    @foreach (var module in Access.GetModulesForRole("Cajero"))
-                                    {
-                                        <MudChip T="string" Color="Color.Default" Size="Size.Small">@module.Title</MudChip>
-                                    }
-                                </div>
-                            </MudPaper>
-                        </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudPaper Class="work-panel soft" Elevation="0">
-                                <div class="panel-title">
-                                    <div>
-                                        <h2>Grifero</h2>
-                                        <p>Acceso limitado a combustible, lecturas, despachos y caja asignada.</p>
+                                    <div class="chip-list">
+                                        @foreach (var module in Access.GetModulesForRole(rol.Nombre))
+                                        {
+                                            <MudChip T="string" Color="Color.Default" Size="Size.Small">@module.Title</MudChip>
+                                        }
                                     </div>
-                                    <MudIcon Icon="@Icons.Material.Rounded.LocalGasStation" Color="Color.Warning" />
-                                </div>
-                                <div class="chip-list">
-                                    @foreach (var module in Access.GetModulesForRole("Grifero"))
-                                    {
-                                        <MudChip T="string" Color="Color.Default" Size="Size.Small">@module.Title</MudChip>
-                                    }
-                                </div>
-                            </MudPaper>
-                        </MudItem>
+                                </MudPaper>
+                            </MudItem>
+                        }
                     </MudGrid>
                 </MudTabPanel>
             </MudTabs>

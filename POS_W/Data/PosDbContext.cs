@@ -16,6 +16,7 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
     public DbSet<SecAuditoria> Auditorias => Set<SecAuditoria>();
     public DbSet<PosCaja> Cajas => Set<PosCaja>();
     public DbSet<PosMovimientoCaja> MovimientosCaja => Set<PosMovimientoCaja>();
+    public DbSet<PosCliente> Clientes => Set<PosCliente>();
     public DbSet<CatCategoria> Categorias => Set<CatCategoria>();
     public DbSet<CatMarca> Marcas => Set<CatMarca>();
     public DbSet<CatUnidadMedida> UnidadesMedida => Set<CatUnidadMedida>();
@@ -185,6 +186,22 @@ public sealed class PosDbContext(DbContextOptions<PosDbContext> options) : DbCon
             entity.Property(x => x.Diferencia).HasColumnName("diferencia").HasPrecision(12, 2);
             entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        });
+
+        modelBuilder.Entity<PosCliente>(entity =>
+        {
+            entity.ToTable("pos_clientes");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.DocumentoTipo).HasColumnName("documento_tipo").HasMaxLength(20);
+            entity.Property(x => x.DocumentoNumero).HasColumnName("documento_numero").HasMaxLength(20);
+            entity.Property(x => x.RazonSocialNombre).HasColumnName("razon_social_nombre").HasMaxLength(200);
+            entity.Property(x => x.Direccion).HasColumnName("direccion").HasMaxLength(300);
+            entity.Property(x => x.Email).HasColumnName("email").HasMaxLength(160);
+            entity.Property(x => x.Telefono).HasColumnName("telefono").HasMaxLength(40);
+            entity.Property(x => x.UltimaConsultaIdentidadAt).HasColumnName("ultima_consulta_identidad_at");
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20);
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         });
 

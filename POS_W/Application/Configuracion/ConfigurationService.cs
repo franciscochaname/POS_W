@@ -1,13 +1,31 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using POS_W.Application.Modules;
 using POS_W.Data;
 using POS_W.Data.Entities;
 
 namespace POS_W.Application.Configuracion;
 
-public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDatabaseSettings databaseSettings)
+public sealed class ConfigurationService(
+    IServiceProvider serviceProvider,
+    PosDatabaseSettings databaseSettings,
+    IMemoryCache cache)
 {
+    private const string WorkspaceCacheKey = "configuration:workspace";
+
+    private static readonly MemoryCacheEntryOptions CacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+        SlidingExpiration = TimeSpan.FromSeconds(30)
+    };
+
     public async Task<ConfigurationWorkspace> GetWorkspaceAsync()
     {
+        if (cache.TryGetValue(WorkspaceCacheKey, out ConfigurationWorkspace? cached) && cached is not null)
+        {
+            return cached;
+        }
+
         var db = CreateDbContext();
         if (db is null)
         {
@@ -33,7 +51,9 @@ public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDa
                 .Select(x => new ParametroListItem(x.Id, x.EstablecimientoId, x.Clave, x.Valor, x.Tipo, x.Estado))
                 .ToListAsync();
 
-            return new ConfigurationWorkspace(true, null, empresas, establecimientos, parametros);
+            var workspace = new ConfigurationWorkspace(true, null, empresas, establecimientos, parametros);
+            cache.Set(WorkspaceCacheKey, workspace, CacheOptions);
+            return workspace;
         }
         catch (Exception ex)
         {
@@ -72,6 +92,7 @@ public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDa
         });
 
         await db.SaveChangesAsync();
+        InvalidateCache();
         return OperationResult.Ok("Empresa registrada.");
     }
 
@@ -113,6 +134,7 @@ public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDa
         });
 
         await db.SaveChangesAsync();
+        InvalidateCache();
         return OperationResult.Ok("Establecimiento registrado.");
     }
 
@@ -149,6 +171,7 @@ public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDa
         });
 
         await db.SaveChangesAsync();
+        InvalidateCache();
         return OperationResult.Ok("Parametro registrado.");
     }
 
@@ -226,6 +249,12 @@ public sealed class ConfigurationService(IServiceProvider serviceProvider, PosDa
 
         var factory = serviceProvider.GetService<IDbContextFactory<PosDbContext>>();
         return factory?.CreateDbContext();
+    }
+
+    private void InvalidateCache()
+    {
+        cache.Remove(WorkspaceCacheKey);
+        cache.Remove(nameof(ConfigurationSummary));
     }
 
     private static string? EmptyToNull(string? value)
